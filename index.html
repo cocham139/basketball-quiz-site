@@ -1,3 +1,8 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>バスケはかせクイズ</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Mochiy+Pop+One&family=Zen+Maru+Gothic:wght@400;500;700;900&display=swap">
 <style>
@@ -390,9 +395,9 @@
   .avatar-fallback{
     display:inline-flex;align-items:center;justify-content:center;
     width:22px;height:22px;border-radius:50%;background:var(--ball);color:#fff;
-    font-family:var(--font-display);font-size:0.85rem;flex:none;
+    font-family:var(--font-display);font-size:0.7rem;flex:none;
   }
-  .avatar-fallback.lg{width:56px;height:56px;font-size:1.6rem;}
+  .avatar-fallback.lg{width:56px;height:56px;font-size:1.4rem;}
   .avatar-preview{width:56px;height:56px;border-radius:50%;object-fit:cover;flex:none;border:2px solid var(--line);}
   .mode-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:20px;}
   @media (max-width:520px){ .mode-grid{grid-template-columns:1fr;} }
@@ -409,13 +414,6 @@
   }
   .profile-form{display:flex;flex-direction:column;gap:6px;}
   .photo-row{display:flex;align-items:center;gap:12px;margin-bottom:10px;flex-wrap:wrap;}
-  .avatar-picker{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 4px;}
-  .avatar-choice{
-    width:42px;height:42px;border-radius:50%;border:2px solid var(--line);
-    background:var(--surface);font-size:1.3rem;cursor:pointer;
-    display:flex;align-items:center;justify-content:center;line-height:1;
-  }
-  .avatar-choice.selected{border-color:var(--ball);background:color-mix(in srgb, var(--ball) 18%, var(--surface));}
   .small-btn{padding:8px 16px;font-size:0.82rem;}
   .field-label{font-size:0.8rem;font-weight:700;color:var(--ink-soft);margin-top:10px;}
   .text-input{
@@ -453,6 +451,66 @@
     display:flex;align-items:center;justify-content:center;color:var(--good);font-weight:900;
   }
   .check-row.checked .check-box{border-color:var(--good);}
+  .tools-title{margin-top:24px;}
+  .avatar-picker{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 4px;}
+  .avatar-choice{
+    width:42px;height:42px;border-radius:50%;border:2px solid var(--line);
+    background:var(--surface);font-size:1.3rem;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;line-height:1;
+  }
+  .avatar-choice.selected{border-color:var(--ball);background:color-mix(in srgb, var(--ball) 18%, var(--surface));}
+  .update-banner.storage-warn{background:var(--gold);color:var(--ink);}
+  .code-box{
+    width:100%;padding:10px 12px;border-radius:12px;border:2px solid var(--line);
+    background:var(--surface-2);color:var(--ink);font-family:monospace;font-size:0.78rem;
+    word-break:break-all;resize:vertical;min-height:64px;
+  }
+  .import-error{color:var(--bad);font-size:0.82rem;margin-top:6px;}
+
+  /* ---------- バスケノート ---------- */
+  .notebook-card{display:flex;flex-direction:column;gap:14px;}
+  .notebook-list{display:flex;flex-direction:column;gap:10px;max-height:52vh;overflow-y:auto;}
+  .note-bubble{
+    background:var(--surface-2);border:2px solid var(--line);border-radius:var(--radius-md);
+    padding:10px 14px;
+  }
+  .note-text{font-size:0.92rem;color:var(--ink);line-height:1.55;white-space:pre-wrap;word-break:break-word;}
+  .note-meta{display:flex;justify-content:space-between;align-items:center;margin-top:6px;font-size:0.72rem;color:var(--ink-soft);}
+  .note-del{
+    border:none;background:none;color:var(--ink-soft);font-size:1rem;line-height:1;cursor:pointer;padding:2px 6px;
+  }
+  .note-del:hover{color:var(--bad);}
+  .notebook-input-row{display:flex;flex-direction:column;gap:10px;}
+  .notebook-textarea{min-height:72px;resize:vertical;font-family:var(--font-body);}
+
+  /* ---------- 得点板 ---------- */
+  .team-grid{display:flex;flex-direction:column;gap:12px;}
+  .team-block{
+    background:var(--surface-2);border:2px solid var(--line);border-radius:var(--radius-md);
+    padding:14px;text-align:center;display:flex;flex-direction:column;gap:10px;
+  }
+  .team-name-input{text-align:center;font-family:var(--font-display);font-size:0.92rem;}
+  .team-score{font-family:var(--font-display);font-size:2.6rem;color:var(--ball-ink);}
+  :root:not([data-theme="light"]) .team-score, :root[data-theme="dark"] .team-score{color:var(--ball);}
+  .score-btn-row{flex-wrap:wrap;gap:6px;justify-content:center;}
+  .score-btn-row .btn, .score-btn-row .btn-ghost{padding:8px 14px;font-size:0.85rem;}
+  .foul-row{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:6px 8px;font-size:0.8rem;color:var(--ink-soft);}
+  .foul-label{white-space:nowrap;}
+  .foul-penalty{color:var(--bad);font-weight:700;}
+  .foul-btn{width:26px;height:26px;border-radius:50%;padding:0;font-size:1rem;line-height:1;}
+  .foul-count{font-variant-numeric:tabular-nums;min-width:1.4em;}
+
+  /* ---------- ストップウォッチ・タイマー ---------- */
+  .timer-card{text-align:center;}
+  .timer-display{
+    font-family:var(--font-display);font-size:clamp(2.4rem,10vw,3.4rem);
+    color:var(--ball-ink);font-variant-numeric:tabular-nums;margin:10px 0;
+  }
+  :root:not([data-theme="light"]) .timer-display, :root[data-theme="dark"] .timer-display{color:var(--ball);}
+  .timer-display.timer-finished{color:var(--bad);}
+  .timer-up-msg{color:var(--bad);font-weight:700;margin-bottom:8px;}
+  .preset-row{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:14px;}
+  .preset-row .active-preset{border-color:var(--ball-ink);color:var(--ball-ink);}
 
   /* ---------- start screen ---------- */
   .start-hero{text-align:center;padding:18px 6px 6px;}
@@ -489,13 +547,6 @@
   .update-banner button.banner-link{
     background:transparent;color:#fff;text-decoration:underline;padding:6px 4px;
   }
-  .update-banner.storage-warn{background:var(--gold);color:var(--ink);}
-  .code-box{
-    width:100%;padding:10px 12px;border-radius:12px;border:2px solid var(--line);
-    background:var(--surface-2);color:var(--ink);font-family:monospace;font-size:0.78rem;
-    word-break:break-all;resize:vertical;min-height:64px;
-  }
-  .import-error{color:var(--bad);font-size:0.82rem;margin-top:6px;}
 
   /* ---------- changelog screen ---------- */
   .cl-version{margin-bottom:22px;}
@@ -539,6 +590,8 @@
   .bd-fill{height:100%;background:var(--cat);border-radius:999px;transition:width 0.5s ease;}
   .bd-frac{font-variant-numeric:tabular-nums;font-size:0.78rem;color:var(--ink-soft);width:36px;text-align:right;}
 </style>
+</head>
+<body>
 
 <div class="wrap" id="app"></div>
 
@@ -546,9 +599,23 @@
 (function(){
   "use strict";
 
-  var APP_VERSION = "1.11";
+  var APP_VERSION = "1.12";
 
   var CHANGELOG = [
+    {version:'1.12', date:'2026-09-15', sections:[
+      {title:'新機能', icon:'star', items:[
+        '「バスケノート」を追加。LINEのKeepのように、気づいたことや練習メモをプロフィールに時系列で残せる(プロフィールごとに保存)',
+        '「得点板」を追加。両チームの得点とチームファウルをその場で記録できる(この画面のデータは保存されません)',
+        '「ストップウォッチ」「タイマー」を追加。タイマーはよく使う1分/3分/5分/10分のプリセットと、終わったときの音つき'
+      ]},
+      {title:'クイズ本体', icon:'star', items:[
+        'せんしゅ編・オフィシャル編ともに問題数を追加(全77問→全92問)。ゴールテンディングやフリースローの5秒ルール、審判の交代・タイムアウトのサインなど、JBA公式ルールブックの他の条文もカバー'
+      ]},
+      {title:'修正', icon:'up', items:[
+        'チームファウルのペナルティを説明するイラストの文字が「5個め」のまま直っていなかったのを「4個め」に修正(問題文・正解は以前から正しい表記でした)',
+        'プロフィールのニックネーム等に特殊な文字が入っていた場合に表示が崩れる可能性があったのを修正'
+      ]}
+    ]},
     {version:'1.11', date:'2026-09-15', sections:[
       {title:'修正', icon:'up', items:[
         'プロフィールや自主トレ記録が「消えた」ように見えるバグを修正。端末の保存情報が読みこめなかったとき、これまでは自動的に「新しいプロフィール作成」画面に進んでしまい、結果的に前のプロフィールとちがう空っぽのプロフィールを作ってしまっていた。これからは同じ場合に「プロフィールをえらぶ」画面が開き、前のプロフィールが残っていればそこから選べるようにした(記録データ自体は消えておらず、選べていなかっただけです)'
@@ -565,8 +632,8 @@
     {version:'1.09', date:'2026-09-15', sections:[
       {title:'修正', icon:'up', items:[
         'イラストと問題内容が合っていなかった箇所を9つ修正(ダブルドリブル/キャリング/デナイディフェンス/ダブルチーム/ポップ/カールカット/ショットクロック/タイムアウト関連の図解)',
-        'プロフィールが消えてしまう問題への対策として、保存に失敗していないか自動でチェックし、うまくいかない端末には警告を表示するようにした',
-        '「引き継ぎコード」機能を追加。プロフィール作成後にコードを控えておけば、データが消えてもコードを貼りつけるだけで復元できる'
+        '端末保存版(娘さん用)でプロフィールが消えてしまう問題への対策として、保存に失敗していないか自動でチェックし、うまくいかない端末には警告を表示するようにした',
+        '端末保存版に「引き継ぎコード」機能を追加。プロフィール作成後にコードを控えておけば、データが消えてもコードを貼りつけるだけで復元できる'
       ]}
     ]},
     {version:'1.08', date:'2026-09-14', sections:[
@@ -586,7 +653,7 @@
         'オフィシャル編(得点係・時計係の勉強)を追加',
         'プロフィール作成・編集機能を追加',
         'ふじのドリル・自主トレの記録機能を追加(自主トレの中から選んで記録)',
-        'サインイン不要のまま、開いている間に最新版を自動チェックする仕組みを追加'
+        'アプリを開いたまま最新版に更新できる、アップデート通知バナーを追加'
       ]},
       {title:'改善', icon:'up', items:[
         '正解の選択肢がAにかたよっていたのを修正。出題のたびにシャッフルするように変更',
@@ -621,10 +688,17 @@
     {key:'shootform', label:'シュートフォーム確認'}
   ];
   var JISHU_TYPES = ['ラダー','フリースロー(シュート練)','マイカンドリル','フットワーク','ハンドリング','ふじのドリル'];
+  var AVATAR_EMOJIS = ['🏀','⭐','🔥','🌟','🐯','🐻','🦁','🐶','🐱','🎯','🚀','🍀'];
 
   var SHOUT_GOOD = ['おっけーーーーーい！！！！','いいんじゃない？！いいんじゃない？！','おっけいおっけい！','自信持ってやってけ！！！'];
   var SHOUT_BAD = ['わからんひとやねー！！！','おまえは馬か鹿か？！','それがお前のこころなんだって！！！','甘いんじゃないのー？！'];
   function pickShout(list){ return list[Math.floor(Math.random() * list.length)]; }
+
+  function escapeHtml(s){
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+    });
+  }
 
   /* ---------------- SVG diagram builders ---------------- */
 
@@ -687,6 +761,16 @@
       scene = playerToken(85, 85, 'off', {r:16, hasBall:true}) +
         '<text x="85" y="130" text-anchor="middle" style="font:900 30px var(--font-display);fill:'+accent+'">24</text>' +
         '<text x="85" y="148" text-anchor="middle" style="font:700 10px var(--font-body);fill:var(--ink-soft)">びょういないにシュート</text>';
+    } else if(kind === 'freethrow5'){
+      scene = playerToken(85, 85, 'off', {r:16, hasBall:true}) +
+        '<text x="85" y="130" text-anchor="middle" style="font:900 30px var(--font-display);fill:'+accent+'">5</text>' +
+        '<text x="85" y="148" text-anchor="middle" style="font:700 10px var(--font-body);fill:var(--ink-soft)">フリースローをうつまで</text>';
+    } else if(kind === 'quarterlen'){
+      scene = '<text x="85" y="100" text-anchor="middle" style="font:900 34px var(--font-display);fill:'+accent+'">6</text>' +
+        '<text x="85" y="128" text-anchor="middle" style="font:700 10px var(--font-body);fill:var(--ink-soft)">1クォーターの長さ(ふん)</text>';
+    } else if(kind === 'overtimelen'){
+      scene = '<text x="85" y="100" text-anchor="middle" style="font:900 34px var(--font-display);fill:'+accent+'">3</text>' +
+        '<text x="85" y="128" text-anchor="middle" style="font:700 10px var(--font-body);fill:var(--ink-soft)">オーバータイムの長さ(ふん)</text>';
     } else {
       scene = '<circle cx="70" cy="90" r="10" style="fill:'+accent+'"/>' +
         '<circle cx="98" cy="90" r="10" style="fill:none;stroke:var(--ink);stroke-width:3"/>' +
@@ -714,7 +798,7 @@
     marks += '<line x1="8" y1="62" x2="72" y2="26" style="stroke:'+accent+';stroke-width:5;stroke-linecap:round"/>';
     return svgOpen('0 0 300 160') +
       marks +
-      '<text x="40" y="84" text-anchor="middle" style="font:700 10px var(--font-body);fill:var(--ink-soft)">チームファウル5個め</text>' +
+      '<text x="40" y="84" text-anchor="middle" style="font:700 10px var(--font-body);fill:var(--ink-soft)">チームファウル4個め</text>' +
       '<line x1="100" y1="50" x2="150" y2="50" style="stroke:var(--ink-soft);stroke-width:3;stroke-linecap:round"/>' +
       '<path d="M142,42 L156,50 L142,58 Z" style="fill:var(--ink-soft)"/>' +
       '<rect x="182" y="14" width="6" height="72" style="fill:var(--ink)"/>' +
@@ -805,6 +889,44 @@
       '<line x1="150" y1="52" x2="150" y2="18" style="stroke:'+accent+';stroke-width:5;stroke-linecap:round"/>' +
       '<line x1="128" y1="18" x2="172" y2="18" style="stroke:'+accent+';stroke-width:5;stroke-linecap:round"/>' +
       '<text x="150" y="10" text-anchor="middle" style="font:700 11px var(--font-body);fill:'+accent+'">コーチが「T」のサインで請求</text>' +
+      '</svg>';
+  }
+
+  function goaltendSVG(accent){
+    return svgOpen('0 0 300 190') +
+      '<line x1="20" y1="6" x2="20" y2="184" style="stroke:var(--ink);stroke-width:3"/>' +
+      '<line x1="10" y1="60" x2="280" y2="60" style="stroke:var(--bad);stroke-width:2" stroke-dasharray="4 6"/>' +
+      '<text x="285" y="56" text-anchor="end" style="font:700 10px var(--font-body);fill:var(--bad)">リングの高さ</text>' +
+      '<ellipse cx="90" cy="60" rx="26" ry="7" style="fill:none;stroke:var(--ball-ink);stroke-width:4"/>' +
+      miniBall(150, 34, 13) +
+      playerToken(200, 40, 'def', {r:14}) +
+      '<path d="M186,42 L160,36" style="fill:none;stroke:var(--bad);stroke-width:3;stroke-linecap:round"/>' +
+      '<path d="M164,30 L156,36 L166,42 Z" style="fill:var(--bad)"/>' +
+      '<text x="150" y="170" text-anchor="middle" style="font:700 12px var(--font-body);fill:'+accent+'">リングより上で触れるとゴールテンディング</text>' +
+      '</svg>';
+  }
+
+  function staggeredScreenSVG(accent){
+    return svgOpen('0 0 300 190') +
+      '<line x1="10" y1="6" x2="10" y2="184" style="stroke:var(--ink);stroke-width:3"/>' +
+      playerToken(90, 50, 'off', {r:13, label:'スクリーン1'}) +
+      playerToken(90, 100, 'off', {r:13, label:'スクリーン2'}) +
+      playerToken(210, 150, 'off', {r:13, hasBall:true}) +
+      '<path d="M210,150 C160,140 130,110 100,95 C80,70 90,55 90,55" style="fill:none;stroke:'+accent+';stroke-width:3.5;stroke-linecap:round" stroke-dasharray="2 8"/>' +
+      '<path d="M84,60 L78,48 L94,50 Z" style="fill:'+accent+'"/>' +
+      '<text x="150" y="20" text-anchor="middle" style="font:700 12px var(--font-body);fill:'+accent+'">2枚のスクリーンを連続で使う</text>' +
+      '</svg>';
+  }
+
+  function transitionOffSVG(accent){
+    return svgOpen('0 0 300 160') +
+      '<line x1="10" y1="4" x2="10" y2="150" style="stroke:var(--ink);stroke-width:3"/>' +
+      '<line x1="150" y1="4" x2="150" y2="150" style="stroke:var(--ink);stroke-width:2" stroke-dasharray="5 5"/>' +
+      playerToken(40, 100, 'off', {r:13, hasBall:true}) +
+      playerToken(90, 60, 'off', {r:13, opacity:0.85}) +
+      '<path d="M55,90 C110,60 180,40 250,40" style="fill:none;stroke:'+accent+';stroke-width:3.5;stroke-linecap:round" stroke-dasharray="2 9"/>' +
+      '<path d="M238,34 L252,40 L238,46 Z" style="fill:'+accent+'"/>' +
+      '<text x="150" y="145" text-anchor="middle" style="font:700 12px var(--font-body);fill:'+accent+'">とったらすぐゴールへ攻める</text>' +
       '</svg>';
   }
 
@@ -1176,6 +1298,15 @@
              '<path d="M205,36 L215,32 M207,55 L219,55 M205,84 L215,88" style="stroke:'+accent+';stroke-width:2;stroke-linecap:round"/>';
     } else if(pose === 'noscore'){
       arms = '<path d="M150,60 L104,68 M150,60 L196,68" style="stroke:'+accent+';stroke-width:6;stroke-linecap:round"/>';
+    } else if(pose === 'substitution'){
+      arms = '<path d="M150,58 L118,26 M150,62 L118,90" style="stroke:'+accent+';stroke-width:6;stroke-linecap:round"/>' +
+             '<path d="M150,58 L182,90 M150,62 L182,26" style="stroke:'+accent+';stroke-width:6;stroke-linecap:round"/>';
+    } else if(pose === 'timeoutsign'){
+      arms = '<path d="M150,60 L150,18" style="stroke:'+accent+';stroke-width:6;stroke-linecap:round"/>' +
+             '<path d="M138,18 L162,18 M138,10 L162,10" style="stroke:'+accent+';stroke-width:3;stroke-linecap:round"/>';
+    } else if(pose === 'disqualify'){
+      arms = '<path d="M150,60 L112,14 M150,60 L188,14" style="stroke:'+accent+';stroke-width:6;stroke-linecap:round"/>' +
+             '<rect x="105" y="6" width="14" height="14" style="fill:'+accent+'"/><rect x="181" y="6" width="14" height="14" style="fill:'+accent+'"/>';
     } else {
       arms = '<path d="M150,60 L124,80 M150,60 L176,80" style="stroke:var(--ink);stroke-width:6;stroke-linecap:round"/>';
     }
@@ -1295,6 +1426,9 @@
       case 'doubleTeam': return doubleTeamSVG(accent);
       case 'pop': return popSVG(accent);
       case 'coachTimeout': return coachTimeoutSVG(accent);
+      case 'goaltend': return goaltendSVG(accent);
+      case 'staggeredScreen': return staggeredScreenSVG(accent);
+      case 'transitionOff': return transitionOffSVG(accent);
       default: return '';
     }
   }
@@ -1468,7 +1602,37 @@
       diagram:{type:'pop'}, source:'コーチング理論・一般戦術知識(ルール条文ではありません)'},
     {cat:'tac', term:'カールカット', q:'スクリーンを使って、円をえがくようにゴール方向へ切りこむカットを何という?', choices:['カールカット','バックドアカット','Vカット','ハンドオフ'], correct:0,
       explain:'スクリーンのすぐそばを回りこむようにカーブしてゴール方向へ切りこむカットを「カールカット」といいます。',
-      diagram:{type:'cut', kind:'backdoor'}, source:'コーチング理論・一般戦術知識(ルール条文ではありません)'}
+      diagram:{type:'cut', kind:'backdoor'}, source:'コーチング理論・一般戦術知識(ルール条文ではありません)'},
+    {cat:'rule', term:'ゴールテンディング', q:'シュートされたボールが、まだリングの高さより上にある間に、相手チームの選手がそのボールに触れると何になる?', choices:['ゴールテンディング(シュートは成功したものとみなされる)','ブロックショット成功(ノーカウント)','バイオレーション(相手ボールのスローイン)','ファウル(相手にフリースロー)'], correct:0,
+      explain:'ボールがリングの高さより上にある間にディフェンスが触れると「ゴールテンディング」という反則になり、シュートは成功したもの(得点)としてあつかわれます。リングの高さより下ならブロックしてもOKです。',
+      diagram:{type:'goaltend'}, source:'第31条(ゴールテンディング、インタフェアレンス)'},
+    {cat:'rule', term:'フリースローの5秒ルール', q:'ミニバスの試合で、フリースローを打つ選手は、審判からボールを受け取ってから何秒以内にシュートしなければならない?', choices:['5秒','3秒','8秒','10秒'], correct:0,
+      explain:'フリースローシューターは、ボールを受け取ってから5秒以内にシュートしなければなりません。スローインの5秒ルールとはべつの「5秒ルール」なので注意しましょう。',
+      diagram:{type:'clock', kind:'freethrow5'}, source:'第43条(フリースロー)'},
+    {cat:'rule', term:'ボーナスのフリースロー本数', q:'ミニバスの試合で、チームファウルがペナルティ(4個)に達したあと、シュートの動作中でない相手にファウルすると、フリースローは何本もらえる?', choices:['2本','1本','3本','0本(得点にならない)'], correct:0,
+      explain:'ペナルティの状態でシュート中でない相手にファウルすると、罰則としてフリースロー2本が与えられます。このとき、ファウルをされた選手がフリースローシューターになります。',
+      diagram:{type:'tally'}, source:'第41条(チームファウル:罰則)'},
+    {cat:'ref', term:'交代のサイン', q:'審判が両うでを胸の前で交差させるサインは、何を表す?', choices:['交代','タイムアウト','得点なし(ノーカウント)','ファイティング(選手同士の乱闘)'], correct:0,
+      explain:'両うでを胸の前で交差させるサインは「交代」を表します。頭の上で交差させる「アンスポーツマンライクファウル」のサインとまちがえないようにしましょう。',
+      diagram:{type:'referee', pose:'substitution'}, source:'巻末資料A 審判のシグナル No.7'},
+    {cat:'ref', term:'タイムアウトのサイン', q:'審判が片手を挙げて手のひらを広げ、自分に向けて動かすサインは、何を表す?', choices:['タイムアウト','交代','得点なし(ノーカウント)','ファウル'], correct:0,
+      explain:'片手を挙げて手のひらを自分の方に動かすサインは「タイムアウト」が認められたことを表します。',
+      diagram:{type:'referee', pose:'timeoutsign'}, source:'巻末資料A 審判のシグナル No.9'},
+    {cat:'ref', term:'ディスクォリファイングファウルのサイン', q:'審判が両手の握りこぶしを頭の上に高く上げるサインは、どんな反則を表す?', choices:['ディスクォリファイングファウル(退場になる重い反則)','テクニカルファウル','ダブルファウル','アンスポーツマンライクファウル'], correct:0,
+      explain:'両手のこぶしを頭上に上げるサインは「ディスクォリファイングファウル」を表します。とても重い反則で、宣せられた選手はその場で退場になります。',
+      diagram:{type:'referee', pose:'disqualify'}, source:'巻末資料A 審判のシグナル No.52'},
+    {cat:'pos', term:'ゾーンディフェンスの数字の意味', q:'「2-3ゾーン」や「1-3-1ゾーン」のように、ゾーンディフェンスの名前によく数字が使われる。この数字は何を表す?', choices:['ゴールに近い方から、各ライン(段)に何人ずつ並ぶかの人数配置','選手の背番号','コートの縦の長さ(メートル)','その大会での順位'], correct:0,
+      explain:'「2-3」ならゴールから遠い方のラインに2人、近い方のラインに3人というように、数字は各ラインに並ぶ人数を表しています。',
+      diagram:{type:'zoneWeak'}, source:'コーチング理論・一般戦術知識(ルール条文ではありません)'},
+    {cat:'pos', term:'ローテーション(ディフェンスの連係)', q:'1人のディフェンスがヘルプに行って自分のマークをはなれたとき、別のディフェンスがそのマークをカバーしにいく連係した動きを何という?', choices:['ローテーション','スイッチ','クローズアウト','ダブルチーム'], correct:0,
+      explain:'ヘルプに行った選手の代わりに、他の選手が空いたマークをカバーする連係プレーを「ローテーション」といいます。1人が動いたら、みんなで玉突きのようにポジションを調整します。',
+      diagram:{type:'help'}, source:'コーチング理論・一般戦術知識(ルール条文ではありません)'},
+    {cat:'tac', term:'スタッガードスクリーン', q:'1人の選手のために、2枚のスクリーンを少しはなしてタイミングよく連続でかける作戦を何という?', choices:['スタッガードスクリーン','ピック&ロール','ハンドオフ','ダブルチーム'], correct:0,
+      explain:'2枚のスクリーンを連続でかけて、ディフェンスをふりきりやすくする作戦を「スタッガードスクリーン」といいます。',
+      diagram:{type:'staggeredScreen'}, source:'コーチング理論・一般戦術知識(ルール条文ではありません)'},
+    {cat:'tac', term:'トランジションオフェンス', q:'リバウンドやスティールでボールを取った直後、すばやくゴールへ攻める攻撃の切りかえを何という?', choices:['トランジションオフェンス(速攻)','セットプレー','ポストプレー','スペーシング'], correct:0,
+      explain:'守りから攻めにすばやく切りかえて速攻をしかけることを「トランジションオフェンス」といいます。相手のディフェンスが整う前に攻めるのがポイントです。',
+      diagram:{type:'transitionOff'}, source:'コーチング理論・一般戦術知識(ルール条文ではありません)'}
   ];
 
   var QUESTIONS_OFFICIAL = [
@@ -1555,7 +1719,19 @@
       diagram:{type:'clockTrigger', kind:'rebound'}, source:'第29条(24秒ルール)'},
     {cat:'timer', term:'選手交代のタイミング(クォーターによる違い)', q:'JBA公式のミニバスケットボールのルールでは、第1〜第3クォーターの間、選手交代ができるのはいつ?', choices:['プレーのインターバル中とハーフタイム中だけ','いつでも(プレー中でも)交代できる','各クォーターの最初の1分間だけ','タイムアウト中は交代できない'], correct:0,
       explain:'ミニバスでは第1〜第3クォーターの間、交代はプレーのインターバル中(クォーターの間)とハーフタイム中しかできません。第4クォーターと各オーバータイムだけは「交代が認められる時機」ならいつでも交代できるようになります。',
-      diagram:{type:'subBoard'}, source:'第19条(交代)'}
+      diagram:{type:'subBoard'}, source:'第19条(交代)'},
+    {cat:'scorer', term:'コーチのテクニカルファウルの記録', q:'ヘッドコーチにテクニカルファウルが宣せられたとき、スコアラーはスコアシートのどこに、どう記録する?', choices:['ヘッドコーチ欄に「B」と記録する','その場では何も記録しない','コーチの名前を消す','得点らんに「T」と書く'], correct:0,
+      explain:'ヘッドコーチ(や交代要員、5個のファウルを宣せられた選手など)によるファウルは、ヘッドコーチのファウルとしてスコアシートのヘッドコーチ欄に「B」と記録されます。',
+      diagram:{type:'scoresheet'}, source:'第40条(プレーヤーの5個のファウル)'},
+    {cat:'scorer', term:'ゲーム没収時の記録', q:'ゲーム開始予定時刻から15分過ぎても片方のチームが5人そろわず「没収(フォーフェイト)」になったとき、スコアシートにはどう記録する?', choices:['没収したチームの2-0の勝ちとし、それまでの得点などの記録はすべて無効にする','没収された時点の得点をそのまま最終スコアにする','引き分け(0-0)として記録する','記録せず、後日再試合とする'], correct:0,
+      explain:'ゲームが没収(フォーフェイト)になった場合、結果は2-0となり、それまで起こった得点などの記録はすべて無効になります。',
+      diagram:{type:'scoresheet'}, source:'第20条(ゲームの没収)'},
+    {cat:'timer', term:'1クォーターの長さ', q:'JBA公式のミニバスケットボールのルールでは、1クォーターは基本何分間?', choices:['6分間','8分間','10分間','5分間'], correct:0,
+      explain:'ミニバスのゲームは6分間の4クォーターで行われるのが基本です。ただし、選手の体力や大会の考え方によって時間を短縮して運用してもよいことになっています。',
+      diagram:{type:'clock', kind:'quarterlen'}, source:'第8条(競技時間、同点、オーバータイム)'},
+    {cat:'timer', term:'延長戦(オーバータイム)の長さ', q:'第4クォーターが終わったときに同点だった場合に行われる、延長戦(オーバータイム)1回の長さは?', choices:['3分間','1分間','5分間','6分間(クォーターと同じ)'], correct:0,
+      explain:'同点のまま第4クォーターが終わると、決着がつくまで1回3分間のオーバータイムを必要な回数くり返します。',
+      diagram:{type:'clock', kind:'overtimelen'}, source:'第8条(競技時間、同点、オーバータイム)'}
   ];
 
   var GLOSSARY_EXTRA = [
@@ -1626,8 +1802,21 @@
     storageBroken:false,
     exportedCode:'',
     importText:'',
-    importError:''
+    importError:'',
+    noteDraft:'',
+    scoreboard:{
+      a:{name:'チームA', score:0, fouls:0},
+      b:{name:'チームB', score:0, fouls:0}
+    },
+    stopwatch:{running:false, elapsedMs:0, startedAt:0},
+    timer:{running:false, totalSec:180, remainingSec:180, finished:false}
   };
+
+  var tickHandle = null;
+  function stopTickers(){
+    if(tickHandle){ clearInterval(tickHandle); tickHandle = null; }
+  }
+  function genId(){ return 'n' + Date.now().toString(36) + Math.random().toString(36).slice(2,8); }
 
   function freshCatStats(mode){
     var s = {};
@@ -1650,12 +1839,12 @@
     render();
   }
 
-  window.startQuiz = function(mode){ resetQuiz(mode); };
+  window.startQuiz = function(mode){ stopTickers(); resetQuiz(mode); };
   window.restartQuiz = function(){ resetQuiz(state.mode); };
-  window.quitQuiz = function(){ state.screen = 'start'; render(); };
-  window.showGlossary = function(){ state.screen='glossary'; state.glossaryFilter='all'; render(); };
-  window.showChangelog = function(){ state.screen='changelog'; render(); };
-  window.backToStart = function(){ state.screen='start'; render(); };
+  window.quitQuiz = function(){ stopTickers(); state.screen = 'start'; render(); };
+  window.showGlossary = function(){ stopTickers(); state.screen='glossary'; state.glossaryFilter='all'; render(); };
+  window.showChangelog = function(){ stopTickers(); state.screen='changelog'; render(); };
+  window.backToStart = function(){ stopTickers(); state.screen='start'; render(); };
   window.setGlossaryFilter = function(cat){ state.glossaryFilter=cat; render(); };
 
   window.selectAnswer = function(i){
@@ -1723,8 +1912,8 @@
       return '<button class="profile-chip" onclick="showProfileGate()">'+ballIconSVG('currentColor',14)+' プロフィールを作る/えらぶ</button>';
     }
     var p = state.profile;
-    var avatar = '<span class="avatar-fallback">'+p.avatarEmoji+'</span>';
-    return '<button class="profile-chip" onclick="showProfile()">'+avatar+' '+p.nickname+'</button>';
+    var avatar = p.photoId ? '<img src="/_blob/'+p.photoId+'" alt="" class="avatar-img"/>' : '<span class="avatar-fallback">'+(p.nickname? escapeHtml(p.nickname.slice(0,1)) : '?')+'</span>';
+    return '<button class="profile-chip" onclick="showProfile()">'+avatar+' '+escapeHtml(p.nickname)+'</button>';
   }
 
   function renderStart(){
@@ -1739,7 +1928,14 @@
           '<button class="btn btn-ghost" onclick="showGlossary()">'+courtIconSVG('currentColor',16)+' 用語集(じてん)を見る</button>' +
           '<button class="btn btn-ghost" onclick="showJishu()">'+tacticsIconSVG('currentColor',16)+' 自主トレを記録する</button>' +
         '</div>' +
-        '<button class="version-tag link-btn" onclick="showChangelog()">ver'+APP_VERSION+'(たんまつ保存版) ・ アップデート情報</button>' +
+        '<h3 class="section-title tools-title">べんりツール</h3>' +
+        '<div class="start-actions">' +
+          '<button class="btn btn-ghost" onclick="showNotebook()">'+pencilIconSVG('currentColor',16)+' バスケノート</button>' +
+          '<button class="btn btn-ghost" onclick="showScoreboardTool()">'+courtIconSVG('currentColor',16)+' 得点板</button>' +
+          '<button class="btn btn-ghost" onclick="showStopwatch()">'+stopwatchIconSVG('currentColor',16)+' ストップウォッチ</button>' +
+          '<button class="btn btn-ghost" onclick="showTimer()">'+stopwatchIconSVG('currentColor',16)+' タイマー</button>' +
+        '</div>' +
+        '<button class="version-tag link-btn" onclick="showChangelog()">ver'+APP_VERSION+' ・ アップデート情報</button>' +
       '</div>';
   }
 
@@ -1872,8 +2068,7 @@
       '<div class="card">'+entries+'</div>';
   }
 
-  /* ---------------- profile / drills (uses db + assets capabilities when available) ---------------- */
-  var AVATAR_EMOJIS = ['🏀','⭐','🔥','🌟','🐯','🐻','🦁','🐶','🐱','🎯','🚀','🍀'];
+  /* ---------------- profile / drills (stored on THIS device only via localStorage) ---------------- */
 
   function normalizeProfile(d){
     d = d || {};
@@ -1883,7 +2078,8 @@
       specialty: d.specialty || '',
       avatarEmoji: d.avatarEmoji || '🏀',
       fujinoChecklist: d.fujinoChecklist || {squat:false, hotwater:false, shootform:false},
-      jishuLog: d.jishuLog || []
+      jishuLog: d.jishuLog || [],
+      notes: d.notes || []
     };
   }
 
@@ -1952,7 +2148,8 @@
     if(idx < 0) return;
     list[idx] = Object.assign({}, list[idx], {
       fujinoChecklist: state.profile.fujinoChecklist,
-      jishuLog: state.profile.jishuLog
+      jishuLog: state.profile.jishuLog,
+      notes: state.profile.notes
     });
     localSaveProfiles(list);
   }
@@ -2014,7 +2211,7 @@
       return;
     }
     var id = localGenId();
-    var data = Object.assign({id:id, fujinoChecklist:{squat:false, hotwater:false, shootform:false}, jishuLog:[]}, basics);
+    var data = Object.assign({id:id, fujinoChecklist:{squat:false, hotwater:false, shootform:false}, jishuLog:[], notes:[]}, basics);
     list.push(data);
     localSaveProfiles(list);
     state.profile = normalizeProfile(data);
@@ -2055,14 +2252,14 @@
     return log.slice().reverse().slice(0,10).map(function(e){
       var d = new Date(e.at);
       var ds = isNaN(d) ? '' : (d.getMonth()+1)+'/'+d.getDate();
-      return '<div class="log-row"><span>'+e.type+'</span><span class="log-date">'+ds+'</span></div>';
+      return '<div class="log-row"><span>'+escapeHtml(e.type)+'</span><span class="log-date">'+ds+'</span></div>';
     }).join('') || '<p class="meta-line">まだ記録がありません。</p>';
   }
 
   function renderProfileGate(){
     var list = state.profileList.map(function(p){
       var av = '<span class="avatar-fallback">'+p.data.avatarEmoji+'</span>';
-      return '<button class="profile-row" onclick="selectProfile(\''+p.id+'\')">'+av+'<span>'+p.data.nickname+'</span></button>';
+      return '<button class="profile-row" onclick="selectProfile(\''+p.id+'\')">'+av+'<span>'+escapeHtml(p.data.nickname)+'</span></button>';
     }).join('') || '<p class="meta-line">まだプロフィールがありません。</p>';
     return '<div class="scoreboard"><div class="title">'+courtIconSVG('currentColor',18)+' プロフィール</div><button class="back-btn" onclick="backToStart()">← もどる</button></div>' +
       '<div class="card">' +
@@ -2072,8 +2269,8 @@
         '<p class="meta-line">※このプロフィールはこの端末(ブラウザ)だけに保存されます。</p>' +
         '<h3 class="section-title">引き継ぎコードから復元する</h3>' +
         '<p class="meta-line">プロフィールが消えてしまったときは、前に控えた「引き継ぎコード」をここに貼りつけてください。</p>' +
-        '<textarea class="code-box" placeholder="引き継ぎコードをここに貼りつけ" oninput="updateImportText(this.value)">'+state.importText+'</textarea>' +
-        (state.importError ? '<div class="import-error">'+state.importError+'</div>' : '') +
+        '<textarea class="code-box" placeholder="引き継ぎコードをここに貼りつけ" oninput="updateImportText(this.value)">'+escapeHtml(state.importText)+'</textarea>' +
+        (state.importError ? '<div class="import-error">'+escapeHtml(state.importError)+'</div>' : '') +
         '<div class="start-actions" style="margin-top:10px">' +
           '<button class="btn btn-ghost small-btn" onclick="importProfileCode()">コードから復元する</button>' +
         '</div>' +
@@ -2092,11 +2289,11 @@
           '<label class="field-label">アバターをえらぶ</label>' +
           avatarPicker +
           '<label class="field-label">ニックネーム</label>' +
-          '<input class="text-input" oninput="updateDraft(\'nickname\', this.value)" placeholder="れい: たろう" value="'+d.nickname+'">' +
+          '<input class="text-input" oninput="updateDraft(\'nickname\', this.value)" placeholder="れい: たろう" value="'+escapeHtml(d.nickname)+'">' +
           '<label class="field-label">バスケ歴</label>' +
-          '<input class="text-input" oninput="updateDraft(\'experience\', this.value)" placeholder="れい: 2年目" value="'+d.experience+'">' +
+          '<input class="text-input" oninput="updateDraft(\'experience\', this.value)" placeholder="れい: 2年目" value="'+escapeHtml(d.experience)+'">' +
           '<label class="field-label">得意なプレー</label>' +
-          '<input class="text-input" oninput="updateDraft(\'specialty\', this.value)" placeholder="れい: リバウンド" value="'+d.specialty+'">' +
+          '<input class="text-input" oninput="updateDraft(\'specialty\', this.value)" placeholder="れい: リバウンド" value="'+escapeHtml(d.specialty)+'">' +
           '<button class="btn" onclick="saveNewProfile()">'+ballIconSVG('#fff',16)+' 保存する</button>' +
         '</div>' +
       '</div>';
@@ -2110,9 +2307,9 @@
     return '<div class="scoreboard"><div class="title">'+courtIconSVG('currentColor',18)+' プロフィール</div><button class="back-btn" onclick="backToStart()">← もどる</button></div>' +
       '<div class="card">' +
         '<div class="profile-head">'+avatar+
-          '<div><div class="profile-name">'+p.nickname+'</div>' +
-          (p.experience ? '<div class="profile-sub">バスケ歴: '+p.experience+'</div>' : '') +
-          (p.specialty ? '<div class="profile-sub">得意なプレー: '+p.specialty+'</div>' : '') +
+          '<div><div class="profile-name">'+escapeHtml(p.nickname)+'</div>' +
+          (p.experience ? '<div class="profile-sub">バスケ歴: '+escapeHtml(p.experience)+'</div>' : '') +
+          (p.specialty ? '<div class="profile-sub">得意なプレー: '+escapeHtml(p.specialty)+'</div>' : '') +
           '</div></div>' +
         '<div class="start-actions" style="margin-top:10px">' +
           '<button class="btn btn-ghost small-btn" onclick="editProfile()">プロフィールを編集</button>' +
@@ -2128,13 +2325,12 @@
         '<div class="start-actions" style="margin-top:6px">' +
           '<button class="btn btn-ghost small-btn" onclick="exportProfileCode()">引き継ぎコードを作る</button>' +
         '</div>' +
-        (state.exportedCode ? '<textarea class="code-box" readonly onclick="this.select()" style="margin-top:10px">'+state.exportedCode+'</textarea><p class="meta-line">タップして全選択し、メモなどにコピーして保存してください。</p>' : '') +
+        (state.exportedCode ? '<textarea class="code-box" readonly onclick="this.select()" style="margin-top:10px">'+escapeHtml(state.exportedCode)+'</textarea><p class="meta-line">タップして全選択し、メモなどにコピーして保存してください。</p>' : '') +
         '<div class="start-actions">' +
           '<button class="btn btn-ghost" onclick="showProfileGate()">プロフィールを切りかえる</button>' +
         '</div>' +
       '</div>';
   }
-
   function renderJishu(){
     var options = JISHU_TYPES.map(function(t){ return '<option value="'+t+'"'+(t===state.jishuPick?' selected':'')+'>'+t+'</option>'; }).join('');
     var isFujino = state.jishuPick === 'ふじのドリル';
@@ -2158,6 +2354,241 @@
       '</div>';
   }
 
+  /* ---------------- バスケノート ---------------- */
+  window.showNotebook = function(){ stopTickers(); state.screen='notebook'; state.noteDraft=''; render(); };
+  window.updateNoteDraft = function(v){ state.noteDraft = v; };
+  window.addNote = function(){
+    if(!state.profile){ window.showProfileGate(); return; }
+    var text = (state.noteDraft||'').trim();
+    if(!text) return;
+    var notes = state.profile.notes.slice();
+    notes.push({id: genId(), text: text, at: new Date().toISOString()});
+    if(notes.length > 200) notes = notes.slice(notes.length - 200);
+    state.profile.notes = notes;
+    state.noteDraft = '';
+    render();
+    persistProfile();
+  };
+  window.deleteNote = function(id){
+    if(!state.profile) return;
+    state.profile.notes = state.profile.notes.filter(function(n){ return n.id !== id; });
+    render();
+    persistProfile();
+  };
+
+  function formatNoteTime(at){
+    var d = new Date(at);
+    if(isNaN(d)) return '';
+    return (d.getMonth()+1)+'/'+d.getDate()+' '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+  }
+
+  function renderNotebook(){
+    if(!state.profile){
+      return '<div class="scoreboard"><div class="title">'+pencilIconSVG('currentColor',18)+' バスケノート</div><button class="back-btn" onclick="backToStart()">← もどる</button></div>' +
+        '<div class="card"><p class="meta-line">ノートを使うにはプロフィールが必要だよ。 <button class="link-btn" onclick="showProfileGate()">作る/えらぶ</button></p></div>';
+    }
+    var notes = state.profile.notes || [];
+    var bubbles = notes.slice().reverse().map(function(n){
+      return '<div class="note-bubble">' +
+        '<div class="note-text">'+escapeHtml(n.text).replace(/\n/g,'<br>')+'</div>' +
+        '<div class="note-meta"><span>'+formatNoteTime(n.at)+'</span><button class="note-del" onclick="deleteNote(\''+n.id+'\')" aria-label="削除">×</button></div>' +
+      '</div>';
+    }).join('') || '<p class="meta-line">まだメモがないよ。きょう気づいたこと、コーチに言われたことを書いてみよう。</p>';
+    return '<div class="scoreboard"><div class="title">'+pencilIconSVG('currentColor',18)+' バスケノート</div><button class="back-btn" onclick="backToStart()">← もどる</button></div>' +
+      '<div class="card notebook-card">' +
+        '<div class="notebook-list">'+bubbles+'</div>' +
+        '<div class="notebook-input-row">' +
+          '<textarea class="text-input notebook-textarea" placeholder="きょうの気づき、練習メモなど…" oninput="updateNoteDraft(this.value)">'+escapeHtml(state.noteDraft)+'</textarea>' +
+          '<button class="btn" onclick="addNote()">'+ballIconSVG('#fff',16)+' 追加</button>' +
+        '</div>' +
+      '</div>';
+  }
+
+  /* ---------------- 得点板 ---------------- */
+  window.showScoreboardTool = function(){ stopTickers(); state.screen='scoreboardTool'; render(); };
+  window.addScore = function(team, pts){
+    state.scoreboard[team].score = Math.max(0, state.scoreboard[team].score + pts);
+    render();
+  };
+  window.addFoul = function(team, delta){
+    state.scoreboard[team].fouls = Math.max(0, state.scoreboard[team].fouls + delta);
+    render();
+  };
+  window.updateTeamName = function(team, name){ state.scoreboard[team].name = name; };
+  window.resetScoreboardTool = function(){
+    state.scoreboard = {
+      a:{name:state.scoreboard.a.name, score:0, fouls:0},
+      b:{name:state.scoreboard.b.name, score:0, fouls:0}
+    };
+    render();
+  };
+
+  function teamBlock(team){
+    var t = state.scoreboard[team];
+    return '<div class="team-block">' +
+      '<input class="text-input team-name-input" value="'+escapeHtml(t.name)+'" oninput="updateTeamName(\''+team+'\', this.value)">' +
+      '<div class="team-score">'+t.score+'</div>' +
+      '<div class="btn-row score-btn-row">' +
+        '<button class="btn small-btn" onclick="addScore(\''+team+'\',1)">+1</button>' +
+        '<button class="btn small-btn" onclick="addScore(\''+team+'\',2)">+2</button>' +
+        '<button class="btn small-btn" onclick="addScore(\''+team+'\',3)">+3</button>' +
+        '<button class="btn btn-ghost small-btn" onclick="addScore(\''+team+'\',-1)">-1</button>' +
+      '</div>' +
+      '<div class="foul-row">' +
+        '<span class="foul-label">チームファウル'+(t.fouls>=4?' <span class="foul-penalty">ペナルティ</span>':'')+'</span>' +
+        '<button class="btn-ghost small-btn foul-btn" onclick="addFoul(\''+team+'\',-1)">-</button>' +
+        '<span class="foul-count">'+t.fouls+'</span>' +
+        '<button class="btn-ghost small-btn foul-btn" onclick="addFoul(\''+team+'\',1)">+</button>' +
+      '</div>' +
+    '</div>';
+  }
+
+  function renderScoreboardTool(){
+    return '<div class="scoreboard"><div class="title">'+courtIconSVG('currentColor',18)+' 得点板</div><button class="back-btn" onclick="backToStart()">← もどる</button></div>' +
+      '<div class="card">' +
+        '<div class="team-grid">'+teamBlock('a')+teamBlock('b')+'</div>' +
+        '<div class="start-actions"><button class="btn btn-ghost" onclick="resetScoreboardTool()">スコアをリセット</button></div>' +
+        '<p class="meta-line">チームファウルが4個になると「ペナルティ」(相手にボーナスフリースロー)。この画面のデータは保存されません(ページを閉じると消えます)。</p>' +
+      '</div>';
+  }
+
+  /* ---------------- ストップウォッチ ---------------- */
+  window.showStopwatch = function(){ stopTickers(); state.screen='stopwatch'; render(); };
+  window.toggleStopwatch = function(){
+    var sw = state.stopwatch;
+    if(sw.running){
+      sw.elapsedMs += Date.now() - sw.startedAt;
+      sw.running = false;
+      stopTickers();
+    } else {
+      sw.startedAt = Date.now();
+      sw.running = true;
+      stopTickers();
+      tickHandle = setInterval(render, 250);
+    }
+    render();
+  };
+  window.resetStopwatch = function(){
+    stopTickers();
+    state.stopwatch = {running:false, elapsedMs:0, startedAt:0};
+    render();
+  };
+
+  function formatElapsed(ms){
+    var totalCs = Math.floor(ms/10);
+    var cs = totalCs % 100;
+    var totalSec = Math.floor(totalCs/100);
+    var s = totalSec % 60;
+    var m = Math.floor(totalSec/60);
+    return String(m).padStart(2,'0')+':'+String(s).padStart(2,'0')+'.'+String(cs).padStart(2,'0');
+  }
+
+  function renderStopwatch(){
+    var sw = state.stopwatch;
+    var live = sw.elapsedMs + (sw.running ? Date.now() - sw.startedAt : 0);
+    return '<div class="scoreboard"><div class="title">'+stopwatchIconSVG('currentColor',18)+' ストップウォッチ</div><button class="back-btn" onclick="backToStart()">← もどる</button></div>' +
+      '<div class="card timer-card">' +
+        '<div class="timer-display">'+formatElapsed(live)+'</div>' +
+        '<div class="start-actions">' +
+          '<button class="btn" onclick="toggleStopwatch()">'+(sw.running?'ストップ':'スタート')+'</button>' +
+          '<button class="btn btn-ghost" onclick="resetStopwatch()">リセット</button>' +
+        '</div>' +
+      '</div>';
+  }
+
+  /* ---------------- タイマー(カウントダウン) ---------------- */
+  window.showTimer = function(){ stopTickers(); state.screen='timer'; render(); };
+  window.setTimerPreset = function(sec){
+    stopTickers();
+    state.timer = {running:false, totalSec:sec, remainingSec:sec, finished:false};
+    render();
+  };
+  window.adjustTimerTotal = function(deltaSec){
+    if(state.timer.running) return;
+    var t = state.timer;
+    t.totalSec = Math.max(10, t.totalSec + deltaSec);
+    t.remainingSec = t.totalSec;
+    t.finished = false;
+    render();
+  };
+  window.toggleTimer = function(){
+    var t = state.timer;
+    if(t.finished){ t.remainingSec = t.totalSec; t.finished = false; }
+    if(t.running){
+      t.running = false;
+      stopTickers();
+    } else {
+      t.running = true;
+      stopTickers();
+      tickHandle = setInterval(function(){
+        var tt = state.timer;
+        if(!tt.running) return;
+        tt.remainingSec -= 1;
+        if(tt.remainingSec <= 0){
+          tt.remainingSec = 0;
+          tt.running = false;
+          tt.finished = true;
+          stopTickers();
+          playTimerBeep();
+        }
+        render();
+      }, 1000);
+    }
+    render();
+  };
+  window.resetTimerRun = function(){
+    stopTickers();
+    var t = state.timer;
+    t.remainingSec = t.totalSec;
+    t.running = false;
+    t.finished = false;
+    render();
+  };
+
+  function playTimerBeep(){
+    try{
+      var Ctx = window.AudioContext || window.webkitAudioContext;
+      if(!Ctx) return;
+      var ctx = new Ctx();
+      [0, 0.35, 0.7].forEach(function(delay){
+        var osc = ctx.createOscillator();
+        var gain = ctx.createGain();
+        osc.type = 'square';
+        osc.frequency.value = 880;
+        gain.gain.value = 0.15;
+        osc.connect(gain); gain.connect(ctx.destination);
+        osc.start(ctx.currentTime + delay);
+        osc.stop(ctx.currentTime + delay + 0.25);
+      });
+    }catch(e){}
+  }
+
+  function formatSeconds(sec){
+    var s = sec % 60;
+    var m = Math.floor(sec/60);
+    return String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
+  }
+
+  function renderTimer(){
+    var t = state.timer;
+    var presets = [60,180,300,600];
+    var presetBtns = presets.map(function(p){
+      return '<button class="btn btn-ghost small-btn'+(t.totalSec===p&&!t.running?' active-preset':'')+'" onclick="setTimerPreset('+p+')">'+formatSeconds(p)+'</button>';
+    }).join('');
+    return '<div class="scoreboard"><div class="title">'+stopwatchIconSVG('currentColor',18)+' タイマー</div><button class="back-btn" onclick="backToStart()">← もどる</button></div>' +
+      '<div class="card timer-card">' +
+        '<div class="timer-display'+(t.finished?' timer-finished':'')+'">'+formatSeconds(t.remainingSec)+'</div>' +
+        (t.finished ? '<p class="timer-up-msg">タイムアップ!</p>' : '') +
+        '<div class="start-actions">' +
+          '<button class="btn" onclick="toggleTimer()">'+(t.running?'ストップ':'スタート')+'</button>' +
+          '<button class="btn btn-ghost" onclick="resetTimerRun()">リセット</button>' +
+        '</div>' +
+        '<div class="preset-row">'+presetBtns+
+          (t.running?'':'<button class="btn-ghost small-btn" onclick="adjustTimerTotal(-30)">-30秒</button><button class="btn-ghost small-btn" onclick="adjustTimerTotal(30)">+30秒</button>') +
+        '</div>' +
+      '</div>';
+  }
+
   function renderUpdateBanner(){
     if(!state.updateAvailable) return '';
     return '<div class="update-banner">新しいバージョン(ver'+state.updateAvailable+')が公開されました。' +
@@ -2170,21 +2601,6 @@
     return '<div class="update-banner storage-warn">この端末では保存がうまくできないようです。' +
       'プロフィール作成後、下の「引き継ぎコード」を必ずひかえておいてください。' +
       '</div>';
-  }
-
-  function render(){
-    var app = document.getElementById('app');
-    var body;
-    if(state.screen === 'start') body = renderStart();
-    else if(state.screen === 'quiz') body = renderQuiz();
-    else if(state.screen === 'glossary') body = renderGlossary();
-    else if(state.screen === 'result') body = renderResult();
-    else if(state.screen === 'profileGate') body = renderProfileGate();
-    else if(state.screen === 'profileEdit') body = renderProfileEdit();
-    else if(state.screen === 'profile') body = renderProfile();
-    else if(state.screen === 'jishu') body = renderJishu();
-    else if(state.screen === 'changelog') body = renderChangelog();
-    app.innerHTML = renderUpdateBanner() + renderStorageBanner() + body;
   }
 
   /* no db here — check for a newer version by re-fetching this same page (same-origin, no capability needed) */
@@ -2205,6 +2621,25 @@
     }).catch(function(){});
   }
 
+  function render(){
+    var app = document.getElementById('app');
+    var body;
+    if(state.screen === 'start') body = renderStart();
+    else if(state.screen === 'quiz') body = renderQuiz();
+    else if(state.screen === 'glossary') body = renderGlossary();
+    else if(state.screen === 'result') body = renderResult();
+    else if(state.screen === 'profileGate') body = renderProfileGate();
+    else if(state.screen === 'profileEdit') body = renderProfileEdit();
+    else if(state.screen === 'profile') body = renderProfile();
+    else if(state.screen === 'jishu') body = renderJishu();
+    else if(state.screen === 'changelog') body = renderChangelog();
+    else if(state.screen === 'notebook') body = renderNotebook();
+    else if(state.screen === 'scoreboardTool') body = renderScoreboardTool();
+    else if(state.screen === 'stopwatch') body = renderStopwatch();
+    else if(state.screen === 'timer') body = renderTimer();
+    app.innerHTML = renderUpdateBanner() + renderStorageBanner() + body;
+  }
+
   initLocalProfile();
   render();
 
@@ -2215,3 +2650,5 @@
   });
 })();
 </script>
+</body>
+</html>
