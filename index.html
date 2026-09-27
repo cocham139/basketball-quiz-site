@@ -421,6 +421,9 @@
     background:var(--surface);color:var(--ink);font-family:var(--font-body);font-size:0.95rem;
   }
   .text-input:focus{outline:2px solid var(--ball);}
+  .jishu-pick-row{display:flex;flex-wrap:wrap;gap:8px;}
+  .jishu-pick-row select{flex:1 1 140px;}
+  .jishu-pick-row .jishu-custom-input{flex:1.4 1 180px;}
   .profile-head{display:flex;align-items:center;gap:14px;}
   .profile-name{font-family:var(--font-display);font-size:1.15rem;color:var(--ink);}
   .profile-sub{font-size:0.82rem;color:var(--ink-soft);}
@@ -649,9 +652,18 @@
 (function(){
   "use strict";
 
-  var APP_VERSION = "1.13";
+  var APP_VERSION = "1.14";
 
   var CHANGELOG = [
+    {version:'1.14', date:'2026-09-28', sections:[
+      {title:'新機能', icon:'star', items:[
+        '自主トレの記録画面で、ドロップダウンにない自主トレも自由に手入力できるようにした',
+        'せんしゅ編・オフィシャル編の1回の問題数を、8〜16問(カテゴリー数によってばらつきがあった)から、どちらも10問前後にそろえた'
+      ]},
+      {title:'クイズ本体', icon:'star', items:[
+        '問題数を追加(全92問→全100問)。マンツーマン推進(ゾーン禁止)のきまりや、交代を求められるのは選手自身であること、トップロック、リロケート、スコアシートのペン色分けなど、JBA公式ルールブックの他の条文もカバー'
+      ]}
+    ]},
     {version:'1.13', date:'2026-09-16', sections:[
       {title:'新機能', icon:'star', items:[
         '自主トレを記録したときに、バスケットボールの花丸(はなまる)と「コングラッチレーション!!」のお祝いエフェクトが出るようにした',
@@ -827,6 +839,12 @@
     } else if(kind === 'overtimelen'){
       scene = '<text x="85" y="100" text-anchor="middle" style="font:900 34px var(--font-display);fill:'+accent+'">3</text>' +
         '<text x="85" y="128" text-anchor="middle" style="font:700 10px var(--font-body);fill:var(--ink-soft)">オーバータイムの長さ(ふん)</text>';
+    } else if(kind === 'halftimelen'){
+      scene = '<text x="85" y="100" text-anchor="middle" style="font:900 34px var(--font-display);fill:'+accent+'">5</text>' +
+        '<text x="85" y="128" text-anchor="middle" style="font:700 10px var(--font-body);fill:var(--ink-soft)">ハーフタイムの長さ(ふん)</text>';
+    } else if(kind === 'qintervallen'){
+      scene = '<text x="85" y="100" text-anchor="middle" style="font:900 34px var(--font-display);fill:'+accent+'">1</text>' +
+        '<text x="85" y="128" text-anchor="middle" style="font:700 10px var(--font-body);fill:var(--ink-soft)">クォーター間インターバル(ふん)</text>';
     } else {
       scene = '<circle cx="70" cy="90" r="10" style="fill:'+accent+'"/>' +
         '<circle cx="98" cy="90" r="10" style="fill:none;stroke:var(--ink);stroke-width:3"/>' +
@@ -962,6 +980,32 @@
       '</svg>';
   }
 
+  function manToManSVG(accent){
+    return svgOpen('0 0 300 170') +
+      playerToken(80, 90, 'off', {r:14}) +
+      playerToken(140, 90, 'def', {r:14}) +
+      '<path d="M80,90 L140,90" style="fill:none;stroke:'+accent+';stroke-width:2" stroke-dasharray="2 6"/>' +
+      '<text x="110" y="34" text-anchor="middle" style="font:700 12px var(--font-body);fill:'+accent+'">1人が1人を守る</text>' +
+      '<g transform="translate(210,55)">' +
+        '<rect x="0" y="0" width="70" height="60" rx="8" style="fill:none;stroke:var(--ink-soft);stroke-width:2" stroke-dasharray="4 4"/>' +
+        '<text x="35" y="35" text-anchor="middle" style="font:700 10px var(--font-body);fill:var(--ink-soft)">ゾーン</text>' +
+        '<path d="M-4,-4 L74,64 M74,-4 L-4,64" style="stroke:var(--bad);stroke-width:4;stroke-linecap:round"/>' +
+      '</g>' +
+      '</svg>';
+  }
+
+  function relocateSVG(accent){
+    return svgOpen('0 0 300 170') +
+      playerToken(80, 100, 'off', {r:13, hasBall:true}) +
+      playerToken(200, 60, 'off', {r:13}) +
+      '<path d="M92,95 C130,80 160,70 186,64" style="fill:none;stroke:var(--ball-ink);stroke-width:3;stroke-linecap:round" stroke-dasharray="2 8"/>' +
+      '<path d="M178,58 L190,64 L178,70 Z" style="fill:var(--ball-ink)"/>' +
+      '<path d="M80,100 C60,120 100,140 130,120" style="fill:none;stroke:'+accent+';stroke-width:3;stroke-linecap:round" stroke-dasharray="2 8"/>' +
+      '<path d="M120,116 L134,120 L124,130 Z" style="fill:'+accent+'"/>' +
+      '<text x="150" y="20" text-anchor="middle" style="font:700 12px var(--font-body);fill:'+accent+'">パスしたらすぐ次の場所へ</text>' +
+      '</svg>';
+  }
+
   function staggeredScreenSVG(accent){
     return svgOpen('0 0 300 190') +
       '<line x1="10" y1="6" x2="10" y2="184" style="stroke:var(--ink);stroke-width:3"/>' +
@@ -1011,6 +1055,10 @@
         '<path d="M96,84 L108,90 L98,98 Z" style="fill:'+accent+'"/>' +
         '<path d="M146,89 L158,93 L148,101 Z" style="fill:'+accent+'"/>' +
         '<text x="125" y="160" text-anchor="middle" style="font:700 12px var(--font-body);fill:'+accent+'">マークをこうかん(スイッチ)</text>';
+    } else if(kind === 'top'){
+      extra = '<path d="M100,90 C110,55 135,45 150,60" style="fill:none;stroke:'+accent+';stroke-width:3.5;stroke-linecap:round" stroke-dasharray="2 8"/>' +
+        '<path d="M142,52 L154,58 L144,66 Z" style="fill:'+accent+'"/>' +
+        '<text x="125" y="160" text-anchor="middle" style="font:700 12px var(--font-body);fill:'+accent+'">スクリーンの上を先回り(トップロック)</text>';
     } else {
       extra = '<path d="M100,90 C90,120 120,138 158,118" style="fill:none;stroke:'+accent+';stroke-width:3.5;stroke-linecap:round" stroke-dasharray="2 8"/>' +
         '<path d="M150,112 L164,118 L152,126 Z" style="fill:'+accent+'"/>' +
@@ -1485,6 +1533,8 @@
       case 'goaltend': return goaltendSVG(accent);
       case 'staggeredScreen': return staggeredScreenSVG(accent);
       case 'transitionOff': return transitionOffSVG(accent);
+      case 'manToMan': return manToManSVG(accent);
+      case 'relocate': return relocateSVG(accent);
       default: return '';
     }
   }
@@ -1688,7 +1738,19 @@
       diagram:{type:'staggeredScreen'}, source:'コーチング理論・一般戦術知識(ルール条文ではありません)'},
     {cat:'tac', term:'トランジションオフェンス', q:'リバウンドやスティールでボールを取った直後、すばやくゴールへ攻める攻撃の切りかえを何という?', choices:['トランジションオフェンス(速攻)','セットプレー','ポストプレー','スペーシング'], correct:0,
       explain:'守りから攻めにすばやく切りかえて速攻をしかけることを「トランジションオフェンス」といいます。相手のディフェンスが整う前に攻めるのがポイントです。',
-      diagram:{type:'transitionOff'}, source:'コーチング理論・一般戦術知識(ルール条文ではありません)'}
+      diagram:{type:'transitionOff'}, source:'コーチング理論・一般戦術知識(ルール条文ではありません)'},
+    {cat:'rule', term:'マンツーマン推進(ゾーン禁止)', q:'ミニバスをふくむアンダーカテゴリー(15歳以下)の大会では、ディフェンスについてどんなきまりが多い?', choices:['ゾーンディフェンスが禁止され、マンツーマンディフェンスが推奨される','ゾーンディフェンスだけが認められる','ディフェンスの種類に決まりはない','1試合に1回だけゾーンを使ってよい'], correct:0,
+      explain:'JBA公式規則により、アンダーカテゴリーの大会ではゾーンディフェンス(=マンツーマン推進、ゾーン禁止)とすることが定められています。個人の1対1の技術をのばすためのきまりです。',
+      diagram:{type:'manToMan'}, source:'第4章(プレーの規定)冒頭の補足'},
+    {cat:'rule', term:'交代を求められるのは誰か', q:'ミニバスの試合で、チームが選手交代をしたいとき、審判やスコアラーに交代の意思を伝えるのは誰?', choices:['交代要員(コートに入る選手)自身','ヘッドコーチ','キャプテンだけ','だれでもよい'], correct:0,
+      explain:'交代を請求できるのは交代要員自身です。スコアラーズテーブルへ行くか、交代席に座ることで、はっきりと交代の申し出を伝えなければなりません。ヘッドコーチが直接請求することはできません。',
+      diagram:{type:'subBoard'}, source:'第19条(交代)'},
+    {cat:'pos', term:'トップロック', q:'スクリーンをかけられたとき、ディフェンスがスクリーンの「上(トップ)」を先に回りこんで相手の進路を先回りする対応を何という?', choices:['トップロック','アンダー','スイッチ','ヘルプ'], correct:0,
+      explain:'スクリーンの上側を先回りして通り、相手にボールをもらわせないように守る対応を「トップロック」といいます。アンダー(下を通る)とは反対の対応です。',
+      diagram:{type:'screenDef', kind:'top'}, source:'コーチング理論・一般戦術知識(ルール条文ではありません)'},
+    {cat:'tac', term:'リロケート', q:'パスを出した選手が、その場に立ち止まらずすぐに別の場所へ動いて、また次のパスをもらえるようにすることを何という?', choices:['リロケート','ハンドオフ','バックドアカット','ポストプレー'], correct:0,
+      explain:'パスをしたあとその場に止まらず、すぐに別のスペースへ動いてパスをもらいやすくすることを「リロケート」といいます。',
+      diagram:{type:'relocate'}, source:'コーチング理論・一般戦術知識(ルール条文ではありません)'}
   ];
 
   var QUESTIONS_OFFICIAL = [
@@ -1787,7 +1849,19 @@
       diagram:{type:'clock', kind:'quarterlen'}, source:'第8条(競技時間、同点、オーバータイム)'},
     {cat:'timer', term:'延長戦(オーバータイム)の長さ', q:'第4クォーターが終わったときに同点だった場合に行われる、延長戦(オーバータイム)1回の長さは?', choices:['3分間','1分間','5分間','6分間(クォーターと同じ)'], correct:0,
       explain:'同点のまま第4クォーターが終わると、決着がつくまで1回3分間のオーバータイムを必要な回数くり返します。',
-      diagram:{type:'clock', kind:'overtimelen'}, source:'第8条(競技時間、同点、オーバータイム)'}
+      diagram:{type:'clock', kind:'overtimelen'}, source:'第8条(競技時間、同点、オーバータイム)'},
+    {cat:'scorer', term:'スコアシートのペンの色分け', q:'JBA公式のスコアシートに得点を記入するとき、クォーターによってペンの色を変えるきまりがある。どう使い分ける?', choices:['第1・第3クォーターは赤色、第2・第4クォーターは青か黒色','全クォーターとも黒色で書く','得点した選手ごとに色を変える','ホームチームは赤、アウェイチームは青'], correct:0,
+      explain:'JBA公式のスコアシートでは、第1・第3クォーターは赤色のペン、第2・第4クォーターとオーバータイムは青か黒色のペンで記入するきまりになっています。',
+      diagram:{type:'scoresheet'}, source:'巻末資料B(スコアシート)'},
+    {cat:'scorer', term:'ヘッドコーチのサイン', q:'ゲーム開始前、両チームのヘッドコーチがスコアシートに対して行うことは?', choices:['記載内容を確認してサインをする','得点を予想して書きこむ','審判の代わりに承認印を押す','何もしなくてよい'], correct:0,
+      explain:'ゲーム開始前、ヘッドコーチはスコアシートの記載事項(メンバーや背番号など)を確認してサインをします。チームAのヘッドコーチが先にサインすることになっています。',
+      diagram:{type:'scoresheet'}, source:'巻末資料B(スコアシート)'},
+    {cat:'timer', term:'ハーフタイムの長さ', q:'前半と後半の間の休けい時間(ハーフタイム)は何分?', choices:['5分間','1分間','2分間','10分間'], correct:0,
+      explain:'ハーフタイムのインターバル(休けい時間)は5分間と定められています。',
+      diagram:{type:'clock', kind:'halftimelen'}, source:'第8条(競技時間、同点、オーバータイム)'},
+    {cat:'timer', term:'クォーター間のインターバル', q:'第1クォーターと第2クォーターの間、また第3クォーターと第4クォーターの間のインターバル(休けい時間)は何分?', choices:['1分間','30秒間','2分間','5分間'], correct:0,
+      explain:'第1・第2クォーターの間と、第3・第4クォーターの間のインターバルは1分間です。各オーバータイムの間のインターバルは2分間になります。',
+      diagram:{type:'clock', kind:'qintervallen'}, source:'第8条(競技時間、同点、オーバータイム)'}
   ];
 
   var GLOSSARY_EXTRA = [
@@ -1796,7 +1870,7 @@
       diagram:{type:'onBall'}, source:'コーチング理論・一般戦術知識(ルール条文ではありません)'}
   ];
 
-  var PER_CATEGORY = 4;
+  var ROUND_SIZE = 10;
 
   function shuffle(arr){
     var a = arr.slice();
@@ -1808,7 +1882,7 @@
   }
 
   function poolForMode(mode){ return mode === 'official' ? QUESTIONS_OFFICIAL : QUESTIONS; }
-  function roundSizeForMode(mode){ return PER_CATEGORY * MODES[mode].cats.length; }
+  function roundSizeForMode(mode){ return Math.min(ROUND_SIZE, poolForMode(mode).length); }
 
   function shuffleChoices(q){
     var order = shuffle([0,1,2,3]);
@@ -1818,14 +1892,19 @@
   }
 
   function pickRound(mode){
-    var cats = MODES[mode].cats;
+    var cats = shuffle(MODES[mode].cats.slice());
     var pool = poolForMode(mode);
     var byCat = {};
     cats.forEach(function(k){ byCat[k] = []; });
     pool.forEach(function(q){ byCat[q.cat].push(q); });
+    var total = roundSizeForMode(mode);
+    var n = cats.length;
+    var base = Math.floor(total / n);
+    var remainder = total % n;
     var picked = [];
-    cats.forEach(function(k){
-      picked = picked.concat(shuffle(byCat[k]).slice(0, PER_CATEGORY));
+    cats.forEach(function(k, i){
+      var take = base + (i < remainder ? 1 : 0);
+      picked = picked.concat(shuffle(byCat[k]).slice(0, take));
     });
     return shuffle(picked).map(shuffleChoices);
   }
@@ -1852,6 +1931,7 @@
     profileList:[],
     profileDraft:{nickname:'', experience:'', specialty:'', avatarEmoji:'🏀'},
     jishuPick:JISHU_TYPES[0],
+    jishuCustomText:'',
     profileEditMode:false,
     updateAvailable:null,
     shoutText:'',
@@ -2296,14 +2376,18 @@
     persistProfile();
   };
 
-  window.showJishu = function(){ state.screen='jishu'; render(); };
+  window.showJishu = function(){ state.screen='jishu'; state.jishuCustomText=''; render(); };
   window.setJishuPick = function(v){ state.jishuPick = v; render(); };
+  window.updateJishuCustom = function(v){ state.jishuCustomText = v; };
   window.logJishuDone = function(){
     if(!state.profile){ window.showProfileGate(); return; }
+    var custom = (state.jishuCustomText||'').trim();
+    var type = custom || state.jishuPick;
     var log = state.profile.jishuLog.slice();
-    log.push({type: state.jishuPick, at: new Date().toISOString()});
+    log.push({type: type, at: new Date().toISOString()});
     if(log.length > 30) log = log.slice(log.length - 30);
     state.profile.jishuLog = log;
+    state.jishuCustomText = '';
     triggerCelebrate();
     render();
     persistProfile();
@@ -2396,6 +2480,8 @@
     var options = JISHU_TYPES.map(function(t){ return '<option value="'+t+'"'+(t===state.jishuPick?' selected':'')+'>'+t+'</option>'; }).join('');
     var isFujino = state.jishuPick === 'ふじのドリル';
     var cl = state.profile ? state.profile.fujinoChecklist : {};
+    var customInput = isFujino ? '' :
+      '<input class="text-input jishu-custom-input" placeholder="または自由に入力(例: ドリブル100回)" oninput="updateJishuCustom(this.value)" value="'+escapeHtml(state.jishuCustomText||'')+'">';
     var action = isFujino ?
       ('<p class="sub">全部チェックすると自主トレとして1回記録されるよ。</p>' +
        '<div class="check-list">' + FUJINO_ITEMS.map(function(it){
@@ -2407,7 +2493,10 @@
     return '<div class="scoreboard"><div class="title">'+courtIconSVG('currentColor',18)+' 自主トレ記録</div><button class="back-btn" onclick="backToStart()">← もどる</button></div>' +
       '<div class="card">' +
         '<label class="field-label">きょうやった自主トレをえらぶ</label>' +
-        '<select class="text-input" onchange="setJishuPick(this.value)">'+options+'</select>' +
+        '<div class="jishu-pick-row">' +
+          '<select class="text-input" onchange="setJishuPick(this.value)">'+options+'</select>' +
+          customInput +
+        '</div>' +
         action +
         (!state.profile ? '<p class="meta-line">記録するにはプロフィールが必要だよ。 <button class="link-btn" onclick="showProfileGate()">作る/えらぶ</button></p>' : '') +
         '<h3 class="section-title">カレンダー</h3>' +
