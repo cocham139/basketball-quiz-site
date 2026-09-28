@@ -772,9 +772,14 @@
 (function(){
   "use strict";
 
-  var APP_VERSION = "1.30";
+  var APP_VERSION = "1.31";
 
   var CHANGELOG = [
+    {version:'1.31', date:'2026-09-28', sections:[
+      {title:'新機能', icon:'star', items:[
+        'GitHub Pages版限定で、Google Analyticsによるアクセス解析に対応できるようにした(測定IDを設定するまでは無効)'
+      ]}
+    ]},
     {version:'1.30', date:'2026-09-28', sections:[
       {title:'新機能', icon:'star', items:[
         '関連商品を追加(作戦盤・マーカーコーン・ビブス・ジャンプロープ)。それぞれ1〜3問の関連する問題にひもづけた'
@@ -954,6 +959,25 @@
   ];
 
   var AI_WORKER_URL = 'https://basketball-hakase-ai.cocham139.workers.dev/ask';
+
+  /* Google Analytics(GA4)の測定ID。GitHub Pages版でのみ有効化する(下のinitAnalytics参照)。
+     アクセス解析を開始するには、Google Analyticsで発行した本物の測定ID(G-で始まる文字列)に
+     差し替えること。 */
+  var GA_MEASUREMENT_ID = 'G-XXXXXXXXXX';
+  function initAnalytics(){
+    try{
+      if(location.hostname !== 'cocham139.github.io') return;
+      if(!GA_MEASUREMENT_ID || GA_MEASUREMENT_ID === 'G-XXXXXXXXXX') return;
+      var script = document.createElement('script');
+      script.async = true;
+      script.src = 'https://www.googletagmanager.com/gtag/js?id=' + GA_MEASUREMENT_ID;
+      document.head.appendChild(script);
+      window.dataLayer = window.dataLayer || [];
+      window.gtag = function(){ window.dataLayer.push(arguments); };
+      window.gtag('js', new Date());
+      window.gtag('config', GA_MEASUREMENT_ID);
+    }catch(e){}
+  }
 
   /* 利用規約・プライバシーポリシー等のリンク先設定。
      type:'internal' はアプリ内の画面へ、type:'external' は url へ新しいタブで遷移する。
@@ -3706,6 +3730,8 @@
       navigator.serviceWorker.register('./sw.js').catch(function(){});
     });
   }
+
+  initAnalytics();
 })();
 </script>
 </body>
