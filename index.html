@@ -699,9 +699,15 @@
 (function(){
   "use strict";
 
-  var APP_VERSION = "1.21";
+  var APP_VERSION = "1.22";
 
   var CHANGELOG = [
+    {version:'1.22', date:'2026-09-28', sections:[
+      {title:'新機能', icon:'star', items:[
+        '自主トレの自由入力で同じ名前を3回使うと、自動でドロップダウンからえらべる項目に追加されるようになった',
+        '自分で登録した自主トレ項目を、あとから追加したり削除したりできる管理画面を追加(「自分の自主トレ項目を管理する」ボタンから)'
+      ]}
+    ]},
     {version:'1.21', date:'2026-09-28', sections:[
       {title:'修正', icon:'up', items:[
         'すでに自分の名前をつけてオリジナル自主トレメニューを作っていた人の名前が、勝手に「オリジナルメニュー」に書きかわってしまうことがあったのを修正。すでに作ったメニュー名はそのまま残るように変更'
@@ -2038,6 +2044,7 @@
     profileDraft:{nickname:'', experience:'', specialty:'', avatarEmoji:'🏀'},
     jishuPick:JISHU_TYPES[0],
     jishuCustomText:'',
+    newCustomTypeText:'',
     customDrillDraft:{name:'', items:[]},
     customDrillError:'',
     profileEditMode:false,
@@ -2343,6 +2350,7 @@
       avatarEmoji: d.avatarEmoji || '🏀',
       customDrill: customDrill,
       customDrillChecklist: customDrillChecklist,
+      customJishuTypes: d.customJishuTypes || [],
       jishuLog: d.jishuLog || [],
       notes: d.notes || []
     };
@@ -2414,6 +2422,7 @@
     list[idx] = Object.assign({}, list[idx], {
       customDrill: state.profile.customDrill,
       customDrillChecklist: state.profile.customDrillChecklist,
+      customJishuTypes: state.profile.customJishuTypes,
       jishuLog: state.profile.jishuLog,
       notes: state.profile.notes
     });
@@ -2505,6 +2514,12 @@
     persistProfile();
   };
 
+  function knownJishuTypes(profile){
+    var list = JISHU_TYPES.concat(profile && profile.customJishuTypes ? profile.customJishuTypes : []);
+    if(profile && profile.customDrill) list.push(profile.customDrill.name);
+    return list;
+  }
+
   window.showJishu = function(){ state.screen='jishu'; state.jishuCustomText=''; render(); };
   window.setJishuPick = function(v){ state.jishuPick = v; render(); };
   window.updateJishuCustom = function(v){ state.jishuCustomText = v; };
@@ -2517,6 +2532,12 @@
     if(log.length > 30) log = log.slice(log.length - 30);
     state.profile.jishuLog = log;
     state.jishuCustomText = '';
+    if(custom && knownJishuTypes(state.profile).indexOf(custom) === -1){
+      var count = log.filter(function(e){ return e.type === custom; }).length;
+      if(count >= 3){
+        state.profile.customJishuTypes = (state.profile.customJishuTypes||[]).concat([custom]);
+      }
+    }
     triggerCelebrate();
     render();
     persistProfile();
@@ -2576,6 +2597,37 @@
     persistProfile();
   };
   window.cancelCustomDrillEdit = function(){ state.screen = 'jishu'; render(); };
+
+  window.showCustomTypesEdit = function(){
+    if(!state.profile){ window.showProfileGate(); return; }
+    state.newCustomTypeText = '';
+    state.screen = 'customtypes-edit';
+    render();
+  };
+  window.hideCustomTypesEdit = function(){ state.screen = 'jishu'; render(); };
+  window.updateNewCustomTypeText = function(v){ state.newCustomTypeText = v; };
+  window.addCustomJishuType = function(){
+    if(!state.profile) return;
+    var v = (state.newCustomTypeText||'').trim();
+    if(!v) return;
+    if(knownJishuTypes(state.profile).indexOf(v) !== -1){
+      state.newCustomTypeText = '';
+      render();
+      return;
+    }
+    state.profile.customJishuTypes = (state.profile.customJishuTypes||[]).concat([v]);
+    state.newCustomTypeText = '';
+    render();
+    persistProfile();
+  };
+  window.removeCustomJishuTypeAt = function(idx){
+    if(!state.profile) return;
+    var list = (state.profile.customJishuTypes||[]).slice();
+    list.splice(idx, 1);
+    state.profile.customJishuTypes = list;
+    render();
+    persistProfile();
+  };
 
   function logRows(log){
     return log.slice().reverse().slice(0,10).map(function(e){
@@ -2662,9 +2714,10 @@
   }
   function renderJishu(){
     var drill = state.profile ? state.profile.customDrill : null;
+    var customTypes = state.profile ? (state.profile.customJishuTypes||[]) : [];
     var extraOption = (drill && drill.items.length) ?
       '<option value="'+escapeHtml(drill.name)+'"'+(state.jishuPick===drill.name?' selected':'')+'>'+escapeHtml(drill.name)+'</option>' : '';
-    var options = JISHU_TYPES.map(function(t){ return '<option value="'+t+'"'+(t===state.jishuPick?' selected':'')+'>'+t+'</option>'; }).join('') + extraOption;
+    var options = JISHU_TYPES.concat(customTypes).map(function(t){ return '<option value="'+escapeHtml(t)+'"'+(t===state.jishuPick?' selected':'')+'>'+escapeHtml(t)+'</option>'; }).join('') + extraOption;
     var isCustomDrill = !!(drill && drill.items.length && state.jishuPick === drill.name);
     var cl = state.profile ? state.profile.customDrillChecklist : {};
     var customInput = isCustomDrill ? '' :
@@ -2684,8 +2737,12 @@
           '<select class="text-input" onchange="setJishuPick(this.value)">'+options+'</select>' +
           customInput +
         '</div>' +
+        '<p class="meta-line">自由入力を3回使うと、自動でえらべる項目に追加されるよ。</p>' +
         action +
-        '<button class="btn" style="margin-top:8px" onclick="showCustomDrillEdit()">'+ballIconSVG('#fff',16)+' '+(drill?'オリジナルメニューを編集する':'オリジナルの自主トレメニューをつくる')+'</button>' +
+        '<div class="start-actions" style="margin-top:8px">' +
+          '<button class="btn" onclick="showCustomDrillEdit()">'+ballIconSVG('#fff',16)+' '+(drill?'オリジナルメニューを編集する':'オリジナルの自主トレメニューをつくる')+'</button>' +
+          '<button class="btn btn-ghost" onclick="showCustomTypesEdit()">自分の自主トレ項目を管理する</button>' +
+        '</div>' +
         (!state.profile ? '<p class="meta-line">記録するにはプロフィールが必要だよ。 <button class="link-btn" onclick="showProfileGate()">作る/えらぶ</button></p>' : '') +
         '<h3 class="section-title">カレンダー</h3>' +
         renderTrainingCalendar(state.profile ? state.profile.jishuLog : []) +
@@ -2693,6 +2750,25 @@
         '<div class="log-list">'+(state.profile ? logRows(state.profile.jishuLog) : '')+'</div>' +
       '</div>' +
       renderCelebration();
+  }
+
+  function renderCustomTypesEdit(){
+    var types = state.profile ? (state.profile.customJishuTypes||[]) : [];
+    var rows = types.map(function(t, i){
+      return '<div class="drill-item-row">' +
+        '<span class="log-row" style="flex:1">'+escapeHtml(t)+'</span>' +
+        '<button class="btn btn-ghost small-btn" onclick="removeCustomJishuTypeAt('+i+')">けす</button>' +
+      '</div>';
+    }).join('') || '<p class="meta-line">まだ登録した項目はありません。自由入力を3回使うと自動で追加されるよ。</p>';
+    return '<div class="scoreboard"><div class="title">'+courtIconSVG('currentColor',18)+' 自分の自主トレ項目</div><button class="back-btn" onclick="hideCustomTypesEdit()">← もどる</button></div>' +
+      '<div class="card">' +
+        '<p class="sub">よく使う自主トレの名前を登録しておくと、次からドロップダウンからえらべるようになるよ。自由入力を3回使うと自動で登録されるよ。</p>' +
+        '<div class="drill-item-list">'+rows+'</div>' +
+        '<div class="jishu-pick-row" style="margin-top:12px">' +
+          '<input class="text-input" placeholder="れい: シュートフォーム練習" oninput="updateNewCustomTypeText(this.value)" value="'+escapeHtml(state.newCustomTypeText||'')+'">' +
+          '<button class="btn btn-ghost" onclick="addCustomJishuType()">＋ついか</button>' +
+        '</div>' +
+      '</div>';
   }
 
   function renderCustomDrillEdit(){
@@ -3165,6 +3241,7 @@
     else if(state.screen === 'profile') body = renderProfile();
     else if(state.screen === 'jishu') body = renderJishu();
     else if(state.screen === 'customdrill-edit') body = renderCustomDrillEdit();
+    else if(state.screen === 'customtypes-edit') body = renderCustomTypesEdit();
     else if(state.screen === 'changelog') body = renderChangelog();
     else if(state.screen === 'notebook') body = renderNotebook();
     else if(state.screen === 'scoreboardTool') body = renderScoreboardTool();
