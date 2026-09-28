@@ -368,6 +368,8 @@
   .legal-text p{margin:0 0 10px;}
   .legal-text ul{margin:0 0 10px;padding-left:1.3em;}
   .legal-text .legal-date{margin-top:24px;font-size:0.78rem;color:var(--ink-soft);text-align:right;}
+  .legal-text a{color:var(--ball-ink);text-decoration:underline;}
+  :root:not([data-theme="light"]) .legal-text a, :root[data-theme="dark"] .legal-text a{color:var(--ball);}
   .back-btn{
     flex:none;padding:8px 14px;border-radius:999px;
     border:1.5px solid color-mix(in srgb, var(--bg) 45%, transparent);
@@ -743,9 +745,14 @@
 (function(){
   "use strict";
 
-  var APP_VERSION = "1.24";
+  var APP_VERSION = "1.25";
 
   var CHANGELOG = [
+    {version:'1.25', date:'2026-09-28', sections:[
+      {title:'修正', icon:'up', items:[
+        '利用規約・プライバシーポリシーのお問い合わせ先メールアドレスを設置'
+      ]}
+    ]},
     {version:'1.24', date:'2026-09-28', sections:[
       {title:'新機能', icon:'star', items:[
         '「使い方」ページを追加(スタート画面から見られる、各機能の説明)',
@@ -2477,7 +2484,7 @@
       '<h3>第9条(準拠法・管轄)</h3>' +
       '<p>本規約の解釈にあたっては日本法を準拠法とし、本アプリに関して紛争が生じた場合には、運営者の所在地を管轄する裁判所を第一審の専属的合意管轄裁判所とします。</p>' +
       '<h3>お問い合わせ</h3>' +
-      '<p>本規約に関するお問い合わせは、下記までご連絡ください。<br>(お問い合わせ先メールアドレスをご記入ください)</p>' +
+      '<p>本規約に関するお問い合わせは、下記までご連絡ください。<br><a href="mailto:info@cochammm.com">info@cochammm.com</a></p>' +
       '<p class="legal-date">制定日:2026年9月28日</p>';
     return '<div class="scoreboard">' +
         '<div class="title">'+courtIconSVG('currentColor',18)+' 利用規約</div>' +
@@ -2524,7 +2531,7 @@
       '<h3>9. 本ポリシーの改定</h3>' +
       '<p>運営者は、必要に応じて本ポリシーの内容を変更することがあります。変更後の内容は、本アプリ上に掲示した時点から効力を生じるものとします。</p>' +
       '<h3>お問い合わせ</h3>' +
-      '<p>本ポリシーに関するお問い合わせは、下記までご連絡ください。<br>(お問い合わせ先メールアドレスをご記入ください)</p>' +
+      '<p>本ポリシーに関するお問い合わせは、下記までご連絡ください。<br><a href="mailto:info@cochammm.com">info@cochammm.com</a></p>' +
       '<p class="legal-date">制定日:2026年9月28日</p>';
     return '<div class="scoreboard">' +
         '<div class="title">'+courtIconSVG('currentColor',18)+' プライバシーポリシー</div>' +
