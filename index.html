@@ -4,6 +4,13 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>バスケはかせクイズ</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/favicon-32.png" sizes="32x32">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="theme-color" content="#E8622B">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="バスケはかせ">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Mochiy+Pop+One&family=Zen+Maru+Gothic:wght@400;500;700;900&display=swap">
 <style>
   :root{
@@ -674,13 +681,21 @@
 (function(){
   "use strict";
 
-  var APP_VERSION = "1.17";
+  var APP_VERSION = "1.18";
 
   var CHANGELOG = [
+    {version:'1.18', date:'2026-09-28', sections:[
+      {title:'新機能', icon:'star', items:[
+        'ホーム画面にアイコンを追加してアプリのように起動できるようにした(PWA対応)。電波が弱い場所でも一度開いたことがあれば表示できるオフライン対応つき'
+      ]},
+      {title:'修正', icon:'up', items:[
+        '更新履歴の文章に特定のコーチの名前が残っていたのを削除し、一般的な表現に修正'
+      ]}
+    ]},
     {version:'1.17', date:'2026-09-28', sections:[
       {title:'変更', icon:'up', items:[
         '自主トレの声がけメッセージを、まちがえたときも元気になれる言葉に変更',
-        '「ふじのドリル」を、だれでも自由に項目と名前を決められる「オリジナル自主トレメニュー」機能に変更。自主トレ画面から作成・編集・削除ができるようになった'
+        '特定のコーチ限定だった自主トレメニューを廃止し、だれでも自由に項目と名前を決められる「オリジナル自主トレメニュー」機能に変更。自主トレ画面から作成・編集・削除ができるようになった'
       ]}
     ]},
     {version:'1.16', date:'2026-09-28', sections:[
@@ -760,7 +775,7 @@
         'クイズの出題を全72問に拡大',
         'オフィシャル編(得点係・時計係の勉強)を追加',
         'プロフィール作成・編集機能を追加',
-        'ふじのドリル・自主トレの記録機能を追加(自主トレの中から選んで記録)',
+        '自主トレの記録機能を追加(自主トレの中から選んで記録)',
         'アプリを開いたまま最新版に更新できる、アップデート通知バナーを追加'
       ]},
       {title:'改善', icon:'up', items:[
@@ -2275,7 +2290,7 @@
     var customDrill = d.customDrill || null;
     var customDrillChecklist = d.customDrillChecklist || {};
     if(!customDrill && d.fujinoChecklist){
-      customDrill = {name:'ふじのドリル', items:[
+      customDrill = {name:'オリジナルメニュー', items:[
         {key:'squat', label:'スクワット'},
         {key:'hotwater', label:'お湯にぎにぎ'},
         {key:'shootform', label:'シュートフォーム確認'}
@@ -3126,6 +3141,12 @@
   document.addEventListener('visibilitychange', function(){
     if(!document.hidden) checkForUpdate();
   });
+
+  if('serviceWorker' in navigator){
+    window.addEventListener('load', function(){
+      navigator.serviceWorker.register('./sw.js').catch(function(){});
+    });
+  }
 })();
 </script>
 </body>
