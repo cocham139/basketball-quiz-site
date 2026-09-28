@@ -588,6 +588,37 @@
     font-size:clamp(1.05rem,5vw,1.3rem);line-height:1.3;text-wrap:balance;
   }
 
+  /* ---------- 初回チュートリアル ---------- */
+  .tutorial-card{
+    background:var(--surface);border:3px solid var(--ball);border-radius:var(--radius-lg);
+    box-shadow:var(--shadow);padding:26px 22px 20px;text-align:center;max-width:300px;
+    animation:celebrate-pop 0.4s cubic-bezier(.36,1.8,.4,1) both;position:relative;
+  }
+  .tutorial-skip{
+    position:absolute;top:10px;right:12px;background:none;border:none;
+    color:var(--ink-soft);font-size:0.72rem;text-decoration:underline;cursor:pointer;
+  }
+  .tutorial-icon{
+    width:56px;height:56px;border-radius:50%;background:var(--ball);
+    display:flex;align-items:center;justify-content:center;margin:6px auto 14px;
+  }
+  .tutorial-title{font-family:var(--font-display);font-size:1.05rem;color:var(--ink);margin:0 0 8px;}
+  .tutorial-body{font-size:0.88rem;line-height:1.65;color:var(--ink);margin:0 0 16px;}
+  .tutorial-dots{display:flex;justify-content:center;gap:6px;margin-bottom:16px;}
+  .tutorial-dot{width:7px;height:7px;border-radius:50%;background:var(--line);}
+  .tutorial-dot.active{background:var(--ball);}
+  .tutorial-nav{display:flex;justify-content:space-between;align-items:center;gap:8px;}
+
+  /* ---------- 使い方ページ ---------- */
+  .help-section{display:flex;gap:12px;align-items:flex-start;margin-bottom:18px;}
+  .help-section:last-of-type{margin-bottom:8px;}
+  .help-icon{
+    flex:none;width:36px;height:36px;border-radius:50%;background:var(--ball);
+    display:flex;align-items:center;justify-content:center;
+  }
+  .help-body h3{margin:0 0 4px;font-family:var(--font-display);font-size:0.95rem;color:var(--ink);}
+  .help-body p{margin:0;font-size:0.85rem;line-height:1.65;color:var(--ink);}
+
   /* ---------- バスケはかせに聞く(AI) ---------- */
   .ask-ai-btn{background:var(--sky);box-shadow:0 8px 18px -8px color-mix(in srgb, var(--sky) 70%, transparent);}
   .ai-card{display:flex;flex-direction:column;gap:10px;}
@@ -712,9 +743,15 @@
 (function(){
   "use strict";
 
-  var APP_VERSION = "1.23";
+  var APP_VERSION = "1.24";
 
   var CHANGELOG = [
+    {version:'1.24', date:'2026-09-28', sections:[
+      {title:'新機能', icon:'star', items:[
+        '「使い方」ページを追加(スタート画面から見られる、各機能の説明)',
+        'プロフィールを初めて作ったとき、主要機能を順番に紹介するチュートリアルが表示されるようになった(「使い方」ページからいつでも見返せる)'
+      ]}
+    ]},
     {version:'1.23', date:'2026-09-28', sections:[
       {title:'新機能', icon:'star', items:[
         '画面下部に「利用規約」「プライバシーポリシー」「特定商取引法に基づく表記」へのリンクを追加'
@@ -866,6 +903,16 @@
     privacy:   {type:'internal', screen:'privacy'},
     tokushoho: {type:'internal', screen:'tokushoho'}
   };
+
+  function tutorialSteps(){
+    return [
+      {icon: ballIconSVG('#fff',28), title:'クイズに挑戦しよう', body:'「せんしゅ編」「オフィシャル編」から4択クイズに挑戦できるよ。といるたびに問題が変わるから、何度でも楽しめるよ!'},
+      {icon: courtIconSVG('#fff',28), title:'用語集(じてん)で調べよう', body:'わからない言葉やルールが出てきたら、「用語集」でいつでも調べられるよ。'},
+      {icon: tacticsIconSVG('#fff',28), title:'自主トレを記録しよう', body:'練習したメニューを記録して、カレンダーにスタンプをためよう。自分だけのオリジナルメニューも自由に作れるよ。'},
+      {icon: pencilIconSVG('#fff',28), title:'バスケノートでメモしよう', body:'気づいたことや、コーチに言われたことをメモしておけるノート機能もあるよ。'},
+      {icon: askIconSVG('#fff',28), title:'バスケはかせに聞いてみよう', body:'バスケのルールや練習方法について、AIの「バスケはかせ」になんでも質問できるよ!'}
+    ];
+  }
 
   var CATS = {
     rule:{label:"きほんのルール", cssvar:"--ball", ink:"--ball-ink", mode:"player"},
@@ -2074,6 +2121,8 @@
     newCustomTypeText:'',
     customDrillDraft:{name:'', items:[]},
     customDrillError:'',
+    showTutorial:false,
+    tutorialStep:0,
     profileEditMode:false,
     updateAvailable:null,
     shoutText:'',
@@ -2129,6 +2178,7 @@
   window.quitQuiz = function(){ stopTickers(); state.screen = 'start'; render(); };
   window.showGlossary = function(){ stopTickers(); state.screen='glossary'; state.glossaryFilter='all'; render(); };
   window.showChangelog = function(){ stopTickers(); state.screen='changelog'; render(); };
+  window.showHelp = function(){ stopTickers(); state.screen='help'; render(); };
   window.backToStart = function(){ stopTickers(); state.screen='start'; render(); };
   window.setGlossaryFilter = function(cat){ state.glossaryFilter=cat; render(); };
 
@@ -2223,6 +2273,7 @@
         '<p class="sub">ミニバスの試合で実際に出てくるルール・しんぱんのサイン・チームディフェンス・さくせんを、4択(たく)クイズでたしかめよう。といるたびに問題が変わるよ!</p>' +
         '<div class="mode-grid">' + modeCard('player') + modeCard('official') + '</div>' +
         '<div class="start-actions">' +
+          '<button class="btn btn-ghost" onclick="showHelp()">'+courtIconSVG('currentColor',16)+' 使い方を見る</button>' +
           '<button class="btn btn-ghost" onclick="showGlossary()">'+courtIconSVG('currentColor',16)+' 用語集(じてん)を見る</button>' +
           '<button class="btn btn-ghost" onclick="showJishu()">'+tacticsIconSVG('currentColor',16)+' 自主トレを記録する</button>' +
         '</div>' +
@@ -2367,6 +2418,35 @@
         '<button class="back-btn" onclick="backToStart()">← もどる</button>' +
       '</div>' +
       '<div class="card">'+entries+'</div>';
+  }
+
+  function helpSections(){
+    return [
+      {icon: ballIconSVG('#fff',20), title:'クイズに挑戦しよう', body:'「せんしゅ編」「オフィシャル編」からモードをえらんで、4択クイズに挑戦できます。1回10問、といるたびに問題がシャッフルされるので、何度でも練習になります。まちがえた問題には、下に解説と出典(ルールブックの何条か)が表示されます。'},
+      {icon: courtIconSVG('#fff',20), title:'用語集(じてん)で調べよう', body:'クイズに出てくる言葉やルールを、あとからゆっくり読み返せる用語集です。カテゴリーごとに絞り込んで見ることもできます。'},
+      {icon: tacticsIconSVG('#fff',20), title:'自主トレを記録しよう', body:'練習したメニューを記録できます。決まったメニューから選ぶほか、自由に入力することもでき、同じ内容を3回入力すると自動でえらべる項目に追加されます。「オリジナルの自主トレメニュー」機能を使うと、複数のチェック項目からなる自分だけの練習メニューも作れます。記録した日はカレンダーにスタンプがつきます。'},
+      {icon: pencilIconSVG('#fff',20), title:'バスケノートでメモしよう', body:'気づいたことや、コーチに言われたことを自由にメモしておけるノート機能です。時系列で見返すことができます。'},
+      {icon: courtIconSVG('#fff',20), title:'得点板・ストップウォッチ・タイマー', body:'練習や試合のときに使える、その場かぎりの便利ツールです。ページを閉じると内容はリセットされます。'},
+      {icon: askIconSVG('#fff',20), title:'バスケはかせに聞いてみよう', body:'バスケのルールや練習方法について、AIの「バスケはかせ」に自由に質問できます。バスケに関係のない質問には、やさしくお断りするようになっています。'},
+      {icon: starIconSVG('#fff',20), title:'プロフィールを作ろう', body:'ニックネームなどを登録すると、クイズの成績や自主トレの記録を保存できるようになります。実際の氏名を入力する必要はありません。'}
+    ];
+  }
+
+  function renderHelp(){
+    var sections = helpSections().map(function(s){
+      return '<div class="help-section">' +
+        '<div class="help-icon">'+s.icon+'</div>' +
+        '<div class="help-body"><h3>'+s.title+'</h3><p>'+s.body+'</p></div>' +
+      '</div>';
+    }).join('');
+    return '<div class="scoreboard">' +
+        '<div class="title">'+courtIconSVG('currentColor',18)+' 使い方</div>' +
+        '<button class="back-btn" onclick="backToStart()">← もどる</button>' +
+      '</div>' +
+      '<div class="card">' +
+        sections +
+        '<button class="btn btn-ghost" style="margin-top:8px" onclick="replayTutorial()">はじめかたチュートリアルをもう一度見る</button>' +
+      '</div>';
   }
 
   function renderTerms(){
@@ -2638,6 +2718,7 @@
     state.profileId = id;
     try{ localStorage.setItem('bb-quiz-local-current', id); }catch(e){}
     state.screen = 'profile';
+    maybeShowTutorial();
     render();
   };
 
@@ -3046,6 +3127,61 @@
     '</div>';
   }
 
+  /* ---------------- 初回チュートリアル ---------------- */
+  function maybeShowTutorial(){
+    var seen = false;
+    try{ seen = !!localStorage.getItem('bb-quiz-tutorial-seen'); }catch(e){}
+    if(!seen){
+      state.showTutorial = true;
+      state.tutorialStep = 0;
+    }
+  }
+  window.replayTutorial = function(){
+    state.showTutorial = true;
+    state.tutorialStep = 0;
+    render();
+  };
+  window.tutorialNext = function(){
+    var steps = tutorialSteps();
+    if(state.tutorialStep < steps.length - 1){
+      state.tutorialStep++;
+      render();
+    } else {
+      window.closeTutorial();
+    }
+  };
+  window.tutorialPrev = function(){
+    if(state.tutorialStep > 0){ state.tutorialStep--; render(); }
+  };
+  window.closeTutorial = function(){
+    state.showTutorial = false;
+    try{ localStorage.setItem('bb-quiz-tutorial-seen', '1'); }catch(e){}
+    render();
+  };
+
+  function renderTutorial(){
+    if(!state.showTutorial) return '';
+    var steps = tutorialSteps();
+    var step = steps[state.tutorialStep];
+    var isLast = state.tutorialStep === steps.length - 1;
+    var dots = steps.map(function(_, i){
+      return '<span class="tutorial-dot'+(i===state.tutorialStep?' active':'')+'"></span>';
+    }).join('');
+    return '<div class="celebrate-overlay">' +
+      '<div class="tutorial-card">' +
+        '<button class="tutorial-skip" onclick="closeTutorial()">スキップ</button>' +
+        '<div class="tutorial-icon">'+step.icon+'</div>' +
+        '<h3 class="tutorial-title">'+step.title+'</h3>' +
+        '<p class="tutorial-body">'+step.body+'</p>' +
+        '<div class="tutorial-dots">'+dots+'</div>' +
+        '<div class="tutorial-nav">' +
+          (state.tutorialStep > 0 ? '<button class="btn btn-ghost small-btn" onclick="tutorialPrev()">← もどる</button>' : '<span></span>') +
+          '<button class="btn small-btn" onclick="tutorialNext()">'+(isLast?'はじめる!':'つぎへ')+'</button>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  }
+
   /* ---------------- バスケノート ---------------- */
   window.showNotebook = function(){ stopTickers(); state.screen='notebook'; state.noteDraft=''; render(); };
   window.updateNoteDraft = function(v){ state.noteDraft = v; };
@@ -3396,7 +3532,8 @@
     else if(state.screen === 'terms') body = renderTerms();
     else if(state.screen === 'privacy') body = renderPrivacy();
     else if(state.screen === 'tokushoho') body = renderTokushoho();
-    app.innerHTML = renderUpdateBanner() + renderStorageBanner() + body + renderLegalFooter();
+    else if(state.screen === 'help') body = renderHelp();
+    app.innerHTML = renderUpdateBanner() + renderStorageBanner() + body + renderLegalFooter() + renderTutorial();
     if(state.screen === 'askAI'){
       var aiLog = document.getElementById('ai-log');
       if(aiLog) aiLog.scrollTop = aiLog.scrollHeight;
