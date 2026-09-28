@@ -699,9 +699,14 @@
 (function(){
   "use strict";
 
-  var APP_VERSION = "1.20";
+  var APP_VERSION = "1.21";
 
   var CHANGELOG = [
+    {version:'1.21', date:'2026-09-28', sections:[
+      {title:'修正', icon:'up', items:[
+        'すでに自分の名前をつけてオリジナル自主トレメニューを作っていた人の名前が、勝手に「オリジナルメニュー」に書きかわってしまうことがあったのを修正。すでに作ったメニュー名はそのまま残るように変更'
+      ]}
+    ]},
     {version:'1.20', date:'2026-09-28', sections:[
       {title:'修正', icon:'up', items:[
         '自主トレの記録一覧で、種類名がHTMLとしてそのまま表示されてしまう箇所を修正(表示のエスケープもれ)',
@@ -2330,9 +2335,6 @@
         {key:'shootform', label:'シュートフォーム確認'}
       ]};
       customDrillChecklist = d.fujinoChecklist;
-    }
-    if(customDrill && customDrill.name === 'ふじのドリル'){
-      customDrill = Object.assign({}, customDrill, {name: 'オリジナルメニュー'});
     }
     return {
       nickname: d.nickname || '名無し',
