@@ -772,9 +772,19 @@
 (function(){
   "use strict";
 
-  var APP_VERSION = "1.28";
+  var APP_VERSION = "1.30";
 
   var CHANGELOG = [
+    {version:'1.30', date:'2026-09-28', sections:[
+      {title:'新機能', icon:'star', items:[
+        '関連商品を追加(作戦盤・マーカーコーン・ビブス・ジャンプロープ)。それぞれ1〜3問の関連する問題にひもづけた'
+      ]}
+    ]},
+    {version:'1.29', date:'2026-09-28', sections:[
+      {title:'修正', icon:'up', items:[
+        '関連商品カードの商品情報(ホイッスル・ストップウォッチ)を実際のものに更新'
+      ]}
+    ]},
     {version:'1.28', date:'2026-09-28', sections:[
       {title:'修正', icon:'up', items:[
         '関連商品カードの商品情報を実際のものに更新'
@@ -960,8 +970,12 @@
      楽天市場検索結果ページを指しているだけで、成果報酬は発生しない)。 */
   var PRODUCT_MASTER = {
     ball5:   {name:'molten JB5000 5号検定球', price:'¥4,180', image:null, url:'https://hb.afl.rakuten.co.jp/ichiba/57fd1157.641e56e9.57fd1158.57809487/?pc=https%3A%2F%2Fitem.rakuten.co.jp%2Fikurun%2F182202%2F&link_type=hybrid_url&ut=eyJwYWdlIjoiaXRlbSIsInR5cGUiOiJoeWJyaWRfdXJsIiwic2l6ZSI6IjI0MHgyNDAiLCJuYW0iOjEsIm5hbXAiOiJyaWdodCIsImNvbSI6MSwiY29tcCI6ImRvd24iLCJwcmljZSI6MSwiYm9yIjoxLCJjb2wiOjEsImJidG4iOjEsInByb2QiOjAsImFtcCI6ZmFsc2V9'},
-    whistle: {name:'バスケ審判用ホイッスル', price:null, image:null, url:'https://search.rakuten.co.jp/search/mall/%E3%83%90%E3%82%B9%E3%82%B1+%E5%AF%A9%E5%88%A4+%E3%83%9B%E3%82%A4%E3%83%83%E3%82%B9%E3%83%AB/'},
-    timer:   {name:'ストップウォッチ・タイマー', price:null, image:null, url:'https://search.rakuten.co.jp/search/mall/%E3%82%B9%E3%83%88%E3%83%83%E3%83%97%E3%82%A6%E3%82%A9%E3%83%83%E3%83%81+%E3%83%90%E3%82%B9%E3%82%B1%E3%83%83%E3%83%88/'}
+    whistle: {name:'Kodrily バスケ審判用ホイッスル', price:'¥1,370', image:null, url:'https://hb.afl.rakuten.co.jp/ichiba/57fd1778.5b01ac02.57fd1779.aeb2ba9f/?pc=https%3A%2F%2Fitem.rakuten.co.jp%2Fprimeplus%2F20250620104633_39%2F&link_type=hybrid_url&ut=eyJwYWdlIjoiaXRlbSIsInR5cGUiOiJoeWJyaWRfdXJsIiwic2l6ZSI6IjI0MHgyNDAiLCJuYW0iOjEsIm5hbXAiOiJyaWdodCIsImNvbSI6MSwiY29tcCI6ImRvd24iLCJwcmljZSI6MSwiYm9yIjoxLCJjb2wiOjEsImJidG4iOjEsInByb2QiOjAsImFtcCI6ZmFsc2V9'},
+    timer:   {name:'シチズン ストップウオッチ055', price:'¥3,267', image:null, url:'https://hb.afl.rakuten.co.jp/ichiba/57fd1832.fb20b8c3.57fd1833.bbd9a148/?pc=https%3A%2F%2Fitem.rakuten.co.jp%2Frcmdin%2Ft4-4405960%2F&link_type=hybrid_url&ut=eyJwYWdlIjoiaXRlbSIsInR5cGUiOiJoeWJyaWRfdXJsIiwic2l6ZSI6IjI0MHgyNDAiLCJuYW0iOjEsIm5hbXAiOiJyaWdodCIsImNvbSI6MSwiY29tcCI6ImRvd24iLCJwcmljZSI6MSwiYm9yIjoxLCJjb2wiOjEsImJidG4iOjEsInByb2QiOjAsImFtcCI6ZmFsc2V9'},
+    tacticsboard:{name:'バスケ作戦盤', price:null, image:null, url:'https://search.rakuten.co.jp/search/mall/%E3%83%90%E3%82%B9%E3%82%B1%E3%83%83%E3%83%88+%E4%BD%9C%E6%88%A6%E7%9B%A4/'},
+    cone:        {name:'トレーニング用マーカーコーン', price:null, image:null, url:'https://search.rakuten.co.jp/search/mall/%E3%83%9E%E3%83%BC%E3%82%AB%E3%83%BC%E3%82%B3%E3%83%BC%E3%83%B3+%E3%83%88%E3%83%AC%E3%83%BC%E3%83%8B%E3%83%B3%E3%82%B0/'},
+    bib:         {name:'ビブス(チーム練習用)', price:null, image:null, url:'https://search.rakuten.co.jp/search/mall/%E3%83%93%E3%83%96%E3%82%B9+%E3%83%90%E3%82%B9%E3%82%B1%E3%83%83%E3%83%88/'},
+    jumprope:    {name:'トレーニング用ジャンプロープ', price:null, image:null, url:'https://search.rakuten.co.jp/search/mall/%E3%82%B8%E3%83%A3%E3%83%B3%E3%83%97%E3%83%AD%E3%83%BC%E3%83%97+%E3%83%88%E3%83%AC%E3%83%BC%E3%83%8B%E3%83%B3%E3%82%B0/'}
   };
 
   function tutorialSteps(){
@@ -1837,16 +1851,16 @@
       diagram:{type:'outOfBounds'}, source:'第22条(バイオレーション)'},
     {cat:'rule', term:'ダブルドリブル', q:'ミニバスの試合で、一度ドリブルを終えて両手でボールを持ったあと、もう一度ドリブルをしてしまう反則を何という?', choices:['ダブルドリブル','トラベリング','キャリング','スリーセカンズ'], correct:0,
       explain:'両手でボールを持った時点で「ドリブル終了」となります。そのあとにもう一度つき始めると「ダブルドリブル」というバイオレーションになります。',
-      diagram:{type:'dribbleViolation', kind:'double'}, source:'第24条(ドリブル)'},
+      diagram:{type:'dribbleViolation', kind:'double'}, source:'第24条(ドリブル)', productTag:'ball5'},
     {cat:'rule', term:'キャリング(パーム)', q:'ミニバスの試合で、ドリブル中に手のひらでボールの下側を長くささえてしまう反則を何という?', choices:['キャリング(パームボール)','ダブルドリブル','トラベリング','バックコートバイオレーション'], correct:0,
       explain:'ドリブルのとき手のひらでボールの下から長くささえたり、ひっくり返したりすると「キャリング(パームボール)」というバイオレーションになります。',
-      diagram:{type:'dribbleViolation', kind:'carry'}, source:'第24条(ドリブル)'},
+      diagram:{type:'dribbleViolation', kind:'carry'}, source:'第24条(ドリブル)', productTag:'ball5'},
     {cat:'rule', term:'スローインの5秒ルール', q:'ミニバスの試合で、サイドラインなどからのスローインで、ボールをコートに投げ入れるまでの制限時間は?', choices:['5秒','3秒','8秒','10秒'], correct:0,
       explain:'スローインをする選手は、ボールを受け取ってから5秒以内にコートへ投げ入れなければなりません。これも5秒ルールの一つです。',
       diagram:{type:'clockTrigger', kind:'throwin'}, source:'第17条(スローイン)'},
     {cat:'ref', term:'ブロッキング', q:'審判が両手を腰にあてるサインは、どんな反則を表す?', choices:['ブロッキング(進路をふさぐ反則)','ホールディング','プッシング','トラベリング'], correct:0,
       explain:'両手を腰にあてるサインは、相手の進路をふさいでぶつかる「ブロッキング」を表します。',
-      diagram:{type:'referee', pose:'hips'}, source:'巻末資料A 審判のシグナル No.37'},
+      diagram:{type:'referee', pose:'hips'}, source:'巻末資料A 審判のシグナル No.37', productTag:'whistle'},
     {cat:'ref', term:'ホールディング', q:'審判が自分の手首をつかむサインは、どんな反則を表す?', choices:['プッシング','ホールディング(押さえる反則)','ブロッキング','トラベリング'], correct:1,
       explain:'片手を上げて、もう一方の手でその手首をつかむしぐさは、相手の体や腕を「押さえる=ホールディング」という反則のサインです。',
       diagram:{type:'referee', pose:'wrist'}, source:'巻末資料A 審判のシグナル No.36'},
@@ -1855,7 +1869,7 @@
       diagram:{type:'referee', pose:'rotate'}, source:'巻末資料A 審判のシグナル No.17'},
     {cat:'ref', term:'テクニカルファウル', q:'審判が両手で「T」の形をつくるサインは何を表す?', choices:['タイムアウト','テクニカルファウル','ボーナスフリースロー','選手の交代'], correct:1,
       explain:'「T」の形は「テクニカルファウル」のサインです。暴言や抗議など、スポーツマンらしくない行動があったときに出されます。',
-      diagram:{type:'referee', pose:'tshape'}, source:'巻末資料A 審判のシグナル No.50'},
+      diagram:{type:'referee', pose:'tshape'}, source:'巻末資料A 審判のシグナル No.50', productTag:'whistle'},
     {cat:'ref', term:'プッシング', q:'審判が両うでを前に出して押し出すように動かすサインは、どんな反則を表す?', choices:['プッシング(押す反則)','ホールディング','ブロッキング','トラベリング'], correct:0,
       explain:'両うでを前に出して押し出すしぐさは、相手を「押す=プッシング」という反則のサインです。',
       diagram:{type:'referee', pose:'push'}, source:'巻末資料A 審判のシグナル No.38'},
@@ -1894,28 +1908,28 @@
       diagram:{type:'help'}, source:'コーチング理論・一般戦術知識(ルール条文ではありません)'},
     {cat:'pos', term:'オンボールディフェンスの基本姿勢', q:'1対1でボールを持った相手を守るとき、正しい基本の姿勢はどれ?', choices:['ひざを軽く曲げ、低い姿勢でこきざみに動く','ひざをのばして高い姿勢で走って追いかける','相手の足もとだけをじっと見る','後ろを向いて下がり続ける'], correct:0,
       explain:'ディフェンスはひざを曲げて重心を低くし、すり足でこきざみに動くことで、どちらに抜かれてもすぐ反応できます。目線は相手の胸(おへそ)を見るのがコツです。',
-      diagram:{type:'onBall'}, source:'コーチング理論・一般戦術知識(ルール条文ではありません)'},
+      diagram:{type:'onBall'}, source:'コーチング理論・一般戦術知識(ルール条文ではありません)', productTag:'cone'},
     {cat:'pos', term:'クローズアウト', q:'ノーマークの相手にパスが出たとき、シュートを打たれないように急いで詰め寄る動きを何という?', choices:['クローズアウト','ボックスアウト','ヘルプディフェンス','スイッチ'], correct:0,
       explain:'パスが出た瞬間に、両手を上げながら小さいステップで一気に間合いをつめる動きを「クローズアウト」といいます。勢いよく突っこみすぎると抜かれやすいので注意します。',
-      diagram:{type:'closeout'}, source:'コーチング理論・一般戦術知識(ルール条文ではありません)'},
+      diagram:{type:'closeout'}, source:'コーチング理論・一般戦術知識(ルール条文ではありません)', productTag:'cone'},
     {cat:'pos', term:'ボックスアウト', q:'シュートが外れたあと、リバウンドを取りやすくするために相手の前に体を入れてブロックすることを何という?', choices:['ボックスアウト(スクリーンアウト)','ヘルプディフェンス','クローズアウト','ダブルチーム'], correct:0,
       explain:'相手より先に体を入れて、ゴールに近い位置を取ることを「ボックスアウト」といいます。ディフェンスの基本として、シュートが打たれたら全員が行います。',
       diagram:{type:'boxout'}, source:'コーチング理論・一般戦術知識(ルール条文ではありません)'},
     {cat:'pos', term:'トランジションディフェンス(スプリントバック)', q:'相手に速攻(ファストブレイク)を受けたとき、ディフェンス側がまず一番にすべきことは?', choices:['全力でゴール前まで走って戻る(スプリントバック)','その場に立ち止まってボールを取り返しにいく','タイムアウトを取る','審判にアピールする'], correct:0,
       explain:'速攻を受けたら、まずは全員が全力でゴール前まで戻り(スプリントバック)、ゴールを守ることを最優先します。ボールを取りにいくのはそのあとです。',
-      diagram:{type:'transitionDef'}, source:'コーチング理論・一般戦術知識(ルール条文ではありません)'},
+      diagram:{type:'transitionDef'}, source:'コーチング理論・一般戦術知識(ルール条文ではありません)', productTag:'jumprope'},
     {cat:'pos', term:'デナイディフェンス', q:'ボールを持っていない相手へのパスコースに手を入れて、パスを受けさせないように守ることを何という?', choices:['デナイディフェンス','ヘルプディフェンス','クローズアウト','ダブルチーム'], correct:0,
       explain:'パスコースに自分の手や体を入れて、相手にボールを持たせないようにする守り方を「デナイディフェンス」といいます。',
       diagram:{type:'deny'}, source:'コーチング理論・一般戦術知識(ルール条文ではありません)'},
     {cat:'pos', term:'ダブルチーム', q:'2人のディフェンスで1人のオフェンス選手を同時に守り、プレッシャーをかける作戦を何という?', choices:['ダブルチーム','スイッチ','アンダー','ゾーンプレス'], correct:0,
       explain:'1人のオフェンスに2人でいっきに寄って守り、ミスやパスを引き出す作戦を「ダブルチーム」といいます。',
-      diagram:{type:'doubleTeam'}, source:'コーチング理論・一般戦術知識(ルール条文ではありません)'},
+      diagram:{type:'doubleTeam'}, source:'コーチング理論・一般戦術知識(ルール条文ではありません)', productTag:'bib'},
     {cat:'pos', term:'マンツーマンディフェンスの基本', q:'マンツーマンディフェンスでは、それぞれのディフェンスは何をする?', choices:['決まった相手を1対1で守る','決まったエリアを守る','ボールだけを見る','ベンチで待つ'], correct:0,
       explain:'マンツーマンディフェンスは、選手それぞれが決まった相手を最初から最後まで1対1で守る作戦です。ゾーンディフェンス(エリアを守る)とは対になる考え方です。',
-      diagram:{type:'onBall'}, source:'コーチング理論・一般戦術知識(ルール条文ではありません)'},
+      diagram:{type:'onBall'}, source:'コーチング理論・一般戦術知識(ルール条文ではありません)', productTag:'bib'},
     {cat:'pos', term:'ディフェンスリバウンド後の切り替え', q:'ディフェンスリバウンドを取ったら、速攻につなげるためにまず何をする?', choices:['はやく前を向いてパスやドリブルで攻める','その場でじっとする','タイムアウトを取る','審判を呼ぶ'], correct:0,
       explain:'リバウンドを取ったら、すぐに顔を上げて前を向き、はやいパスやドリブルで攻撃に切りかえることでファストブレイクにつながります。',
-      diagram:{type:'pressbreak'}, source:'コーチング理論・一般戦術知識(ルール条文ではありません)'},
+      diagram:{type:'pressbreak'}, source:'コーチング理論・一般戦術知識(ルール条文ではありません)', productTag:'jumprope'},
     {cat:'tac', term:'バックドアカット', q:'ディフェンスの視界の外から急に切りこんでパスをもらう動きを何という?', choices:['バックドアカット','Vカット','ピック&ロール','ポストアップ'], correct:0,
       explain:'相手が前を張って守っている(オーバープレー)ときに、その裏を取ってゴールに切りこむ動きを「バックドアカット」といいます。',
       diagram:{type:'cut', kind:'backdoor'}, source:'コーチング理論・一般戦術知識(ルール条文ではありません)'},
@@ -1924,13 +1938,13 @@
       diagram:{type:'cut', kind:'vcut'}, source:'コーチング理論・一般戦術知識(ルール条文ではありません)'},
     {cat:'tac', term:'ピック&ロール', q:'スクリーンをかけた選手が、そのままゴール方向に切りこんでパスをもらう連携プレーを何という?', choices:['ピック&ロール','バックドアカット','ゾーンプレス','ボックスアウト'], correct:0,
       explain:'スクリーン(ピック)をかけたあと、ゴールに向かって切りこむ(ロールする)ことでパスをもらう連携を「ピック&ロール」といいます。',
-      diagram:{type:'pickroll'}, source:'コーチング理論・一般戦術知識(ルール条文ではありません)'},
+      diagram:{type:'pickroll'}, source:'コーチング理論・一般戦術知識(ルール条文ではありません)', productTag:'tacticsboard'},
     {cat:'tac', term:'プレスブレイク', q:'相手のフルコートプレスに対して、落ち着いてボールを運ぶための作戦を何という?', choices:['プレスブレイク','ファストブレイク','ゾーンディフェンス','ボックスアウト'], correct:0,
       explain:'相手が全コートで守ってくるプレスディフェンスに対して、パスやドリブルで冷静に運ぶ作戦を「プレスブレイク」といいます。',
       diagram:{type:'pressbreak'}, source:'コーチング理論・一般戦術知識(ルール条文ではありません)'},
     {cat:'tac', term:'ハンドオフ', q:'ドリブルしている選手が、近くを走ってきた味方に直接ボールを手わたすプレーを何という?', choices:['ハンドオフ','ピック&ロール','バックドアカット','ポストプレー'], correct:0,
       explain:'ドリブルをしながら味方のそばを通り、体の近くで直接ボールを手わたすプレーを「ハンドオフ」といいます。パスより速く、ディフェンスがまよいやすい連携です。',
-      diagram:{type:'handoff'}, source:'コーチング理論・一般戦術知識(ルール条文ではありません)'},
+      diagram:{type:'handoff'}, source:'コーチング理論・一般戦術知識(ルール条文ではありません)', productTag:'tacticsboard'},
     {cat:'tac', term:'スペーシング', q:'オフェンスの選手同士が近づきすぎないように、コート全体に広がって立つことを何という?', choices:['スペーシング','ポストプレー','スクリーンプレイ','ダブルチーム'], correct:0,
       explain:'選手同士の間を広く保つ「スペーシング」がよいと、パスコースやドリブルで抜けるスペースが生まれ、ディフェンスが守りにくくなります。',
       diagram:{type:'spacing'}, source:'コーチング理論・一般戦術知識(ルール条文ではありません)'},
@@ -1945,7 +1959,7 @@
       diagram:{type:'spacing'}, source:'コーチング理論・一般戦術知識(ルール条文ではありません)'},
     {cat:'tac', term:'セットプレー', q:'あらかじめ決めておいた動きの順番通りにプレーする作戦を何という?', choices:['セットプレー','モーションオフェンス','トランジション','マンツーマン'], correct:0,
       explain:'スクリーンやカットの順番をあらかじめ決めておき、その通りに動く作戦を「セットプレー」といいます。タイムアウト明けやアウトオブバウンズのときによく使われます。',
-      diagram:{type:'pickroll'}, source:'コーチング理論・一般戦術知識(ルール条文ではありません)'},
+      diagram:{type:'pickroll'}, source:'コーチング理論・一般戦術知識(ルール条文ではありません)', productTag:'tacticsboard'},
     {cat:'tac', term:'ポップ', q:'スクリーンをかけた選手が、ゴールに切りこまずその場から外に開いてシュートをねらう動きを何という?(ロールの反対)', choices:['ポップ','ロール','カールカット','リジェクト'], correct:0,
       explain:'スクリーン後にゴールへ切りこむのが「ロール」、外に開いてシュートをねらうのが「ポップ」です。ディフェンスの守り方によって使い分けます。',
       diagram:{type:'pop'}, source:'コーチング理論・一般戦術知識(ルール条文ではありません)'},
@@ -2071,7 +2085,7 @@
       diagram:{type:'coachTimeout'}, source:'第49条(タイマー:任務)/第8条(競技時間、同点、オーバータイム)'},
     {cat:'timer', term:'タイムアウトの長さ', q:'JBA公式のミニバスケットボールのルールでは、タイムアウト1回の長さは正しくは何秒?', choices:['45秒','30秒','60秒','90秒'], correct:0,
       explain:'ミニバスのタイムアウトは1回45秒です。タイマーは35秒が経過した時点でブザーを鳴らして審判に知らせ、45秒が経過したらもう一度ブザーを鳴らしてタイムアウト終了を知らせます。',
-      diagram:{type:'coachTimeout'}, source:'第18条(タイムアウト)'},
+      diagram:{type:'coachTimeout'}, source:'第18条(タイムアウト)', productTag:'timer'},
     {cat:'timer', term:'オーバータイム(延長戦)', q:'試合が同点で終わったとき、決着をつけるために行う追加の時間を何という?', choices:['オーバータイム(延長戦)','ハーフタイム','タイムアウト','インターバル'], correct:0,
       explain:'決められたピリオドが終わって同点のときは、「オーバータイム」という追加の時間を行って決着をつけます。',
       diagram:{type:'horn'}, source:'第8条(競技時間、同点、オーバータイム)'},
@@ -2092,7 +2106,7 @@
       diagram:{type:'scoresheet'}, source:'第20条(ゲームの没収)'},
     {cat:'timer', term:'1クォーターの長さ', q:'JBA公式のミニバスケットボールのルールでは、1クォーターは基本何分間?', choices:['6分間','8分間','10分間','5分間'], correct:0,
       explain:'ミニバスのゲームは6分間の4クォーターで行われるのが基本です。ただし、選手の体力や大会の考え方によって時間を短縮して運用してもよいことになっています。',
-      diagram:{type:'clock', kind:'quarterlen'}, source:'第8条(競技時間、同点、オーバータイム)'},
+      diagram:{type:'clock', kind:'quarterlen'}, source:'第8条(競技時間、同点、オーバータイム)', productTag:'timer'},
     {cat:'timer', term:'延長戦(オーバータイム)の長さ', q:'第4クォーターが終わったときに同点だった場合に行われる、延長戦(オーバータイム)1回の長さは?', choices:['3分間','1分間','5分間','6分間(クォーターと同じ)'], correct:0,
       explain:'同点のまま第4クォーターが終わると、決着がつくまで1回3分間のオーバータイムを必要な回数くり返します。',
       diagram:{type:'clock', kind:'overtimelen'}, source:'第8条(競技時間、同点、オーバータイム)'},
