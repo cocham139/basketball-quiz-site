@@ -565,6 +565,25 @@
     font-size:clamp(1.05rem,5vw,1.3rem);line-height:1.3;text-wrap:balance;
   }
 
+  /* ---------- バスケはかせに聞く(AI) ---------- */
+  .ask-ai-btn{background:var(--sky);box-shadow:0 8px 18px -8px color-mix(in srgb, var(--sky) 70%, transparent);}
+  .ai-card{display:flex;flex-direction:column;gap:12px;}
+  .ai-log{display:flex;flex-direction:column;gap:14px;max-height:52vh;overflow-y:auto;}
+  .ai-turn{display:flex;flex-direction:column;gap:8px;}
+  .ai-bubble{border-radius:var(--radius-md);padding:10px 14px;font-size:0.92rem;line-height:1.55;max-width:88%;}
+  .ai-bubble.ai-q{
+    align-self:flex-end;background:color-mix(in srgb, var(--sky) 20%, var(--surface));
+    border:2px solid var(--sky);color:var(--ink);
+  }
+  .ai-bubble.ai-a{
+    align-self:flex-start;background:var(--surface-2);border:2px solid var(--line);color:var(--ink);
+  }
+  .ai-bubble.ai-loading{color:var(--ink-soft);font-style:italic;}
+  .ai-error{color:var(--bad);font-size:0.85rem;}
+  .ai-input-row{display:flex;flex-wrap:wrap;gap:8px;}
+  .ai-input-row .text-input{flex:1 1 220px;}
+  .ai-disclaimer{opacity:0.75;}
+
   /* ---------- start screen ---------- */
   .start-hero{text-align:center;padding:18px 6px 6px;}
   .start-hero h1{font-size:clamp(1.6rem,5vw,2.3rem);color:var(--ball-ink);}
@@ -652,9 +671,14 @@
 (function(){
   "use strict";
 
-  var APP_VERSION = "1.14";
+  var APP_VERSION = "1.15";
 
   var CHANGELOG = [
+    {version:'1.15', date:'2026-09-28', sections:[
+      {title:'新機能', icon:'star', items:[
+        '「バスケはかせに聞く」を追加。バスケのルールや練習方法について、AIに自由に質問できるチャット画面。バスケに関係ない質問にはやさしく断る仕組みつき'
+      ]}
+    ]},
     {version:'1.14', date:'2026-09-28', sections:[
       {title:'新機能', icon:'star', items:[
         '自主トレの記録画面で、ドロップダウンにない自主トレも自由に手入力できるようにした',
@@ -737,6 +761,8 @@
       ]}
     ]}
   ];
+
+  var AI_WORKER_URL = 'https://basketball-hakase-ai.cocham139.workers.dev/ask';
 
   var CATS = {
     rule:{label:"きほんのルール", cssvar:"--ball", ink:"--ball-ink", mode:"player"},
@@ -1555,6 +1581,10 @@
     size = size || 16;
     return '<svg viewBox="0 0 24 24" width="'+size+'" height="'+size+'"><circle cx="12" cy="13" r="8" style="fill:none;stroke:'+accent+';stroke-width:1.8"/><path d="M12,13 L12,8 M12,13 L16,13" style="stroke:'+accent+';stroke-width:1.8;stroke-linecap:round"/><path d="M9,2 L15,2" style="stroke:'+accent+';stroke-width:1.8;stroke-linecap:round"/></svg>';
   }
+  function askIconSVG(accent, size){
+    size = size || 16;
+    return '<svg viewBox="0 0 24 24" width="'+size+'" height="'+size+'"><path d="M4,5 L20,5 L20,16 L10,16 L5,20 L5,16 L4,16 Z" style="fill:none;stroke:'+accent+';stroke-width:1.8;stroke-linejoin:round"/><text x="12" y="14" text-anchor="middle" style="font:700 11px var(--font-body);fill:'+accent+'">?</text></svg>';
+  }
   function shieldIconSVG(accent, size){
     size = size || 16;
     return '<svg viewBox="0 0 24 24" width="'+size+'" height="'+size+'"><path d="M12,3 L20,6 L20,12 C20,17 16.5,20.5 12,22 C7.5,20.5 4,17 4,12 L4,6 Z" style="fill:none;stroke:'+accent+';stroke-width:1.8;stroke-linejoin:round"/><path d="M9,12 L11,14.5 L16,9" style="fill:none;stroke:'+accent+';stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round"/></svg>';
@@ -1948,7 +1978,11 @@
     timer:{running:false, totalSec:180, remainingSec:180, finished:false},
     celebrate:false,
     calYear:(new Date()).getFullYear(),
-    calMonth:(new Date()).getMonth()
+    calMonth:(new Date()).getMonth(),
+    askAIQuestion:'',
+    askAIHistory:[],
+    askAILoading:false,
+    askAIError:''
   };
 
   var tickHandle = null;
@@ -2066,6 +2100,9 @@
         '<div class="start-actions">' +
           '<button class="btn btn-ghost" onclick="showGlossary()">'+courtIconSVG('currentColor',16)+' 用語集(じてん)を見る</button>' +
           '<button class="btn btn-ghost" onclick="showJishu()">'+tacticsIconSVG('currentColor',16)+' 自主トレを記録する</button>' +
+        '</div>' +
+        '<div class="start-actions">' +
+          '<button class="btn ask-ai-btn" onclick="showAskAI()">'+askIconSVG('#fff',16)+' バスケはかせに聞く</button>' +
         '</div>' +
         '<h3 class="section-title tools-title">べんりツール</h3>' +
         '<div class="start-actions">' +
@@ -2663,6 +2700,65 @@
       '</div>';
   }
 
+  /* ---------------- バスケはかせに聞く(AI) ---------------- */
+  window.showAskAI = function(){ stopTickers(); state.screen='askAI'; state.askAIError=''; render(); };
+  window.updateAskAIQuestion = function(v){ state.askAIQuestion = v; };
+  window.submitAskAI = function(){
+    var q = (state.askAIQuestion||'').trim();
+    if(!q || state.askAILoading) return;
+    if(q.length > 300){
+      state.askAIError = 'しつもんは300文字いないにしてね。';
+      render();
+      return;
+    }
+    state.askAILoading = true;
+    state.askAIError = '';
+    state.askAIQuestion = '';
+    render();
+    fetch(AI_WORKER_URL, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({question: q})
+    }).then(function(res){
+      return res.json().then(function(data){ return {ok: res.ok, data: data}; });
+    }).then(function(result){
+      state.askAILoading = false;
+      if(!result.ok || !result.data || !result.data.answer){
+        state.askAIError = 'うまく答えられなかったよ。もう一度きいてみてね。';
+        render();
+        return;
+      }
+      var history = state.askAIHistory.slice();
+      history.push({q: q, a: result.data.answer});
+      if(history.length > 20) history = history.slice(history.length - 20);
+      state.askAIHistory = history;
+      render();
+    }).catch(function(){
+      state.askAILoading = false;
+      state.askAIError = 'つうしんに失敗したよ。インターネットのせつぞくを確認してね。';
+      render();
+    });
+  };
+
+  function renderAskAI(){
+    var log = state.askAIHistory.map(function(entry){
+      return '<div class="ai-turn">' +
+        '<div class="ai-bubble ai-q">'+escapeHtml(entry.q)+'</div>' +
+        '<div class="ai-bubble ai-a">'+escapeHtml(entry.a).replace(/\n/g,'<br>')+'</div>' +
+      '</div>';
+    }).join('') || '<p class="meta-line">バスケのルールや練習のこと、なんでもきいてみよう!</p>';
+    return '<div class="scoreboard"><div class="title">'+askIconSVG('currentColor',18)+' バスケはかせに聞く</div><button class="back-btn" onclick="backToStart()">← もどる</button></div>' +
+      '<div class="card ai-card">' +
+        '<div class="ai-log">'+log+(state.askAILoading ? '<div class="ai-turn"><div class="ai-bubble ai-a ai-loading">かんがえちゅう…</div></div>' : '')+'</div>' +
+        (state.askAIError ? '<p class="ai-error">'+escapeHtml(state.askAIError)+'</p>' : '') +
+        '<div class="ai-input-row">' +
+          '<input class="text-input" placeholder="れい: リバウンドが上手になるには？" value="'+escapeHtml(state.askAIQuestion)+'" oninput="updateAskAIQuestion(this.value)" onkeydown="if(event.key===\'Enter\'){submitAskAI();}">' +
+          '<button class="btn" onclick="submitAskAI()" '+(state.askAILoading?'disabled':'')+'>'+askIconSVG('#fff',16)+' きく</button>' +
+        '</div>' +
+        '<p class="meta-line ai-disclaimer">AIの答えです。まちがっていることもあるので、大事なルールは審判やコーチにも確認してね。</p>' +
+      '</div>';
+  }
+
   /* ---------------- 得点板 ---------------- */
   window.showScoreboardTool = function(){ stopTickers(); state.screen='scoreboardTool'; render(); };
   window.addScore = function(team, pts){
@@ -2896,6 +2992,7 @@
     else if(state.screen === 'scoreboardTool') body = renderScoreboardTool();
     else if(state.screen === 'stopwatch') body = renderStopwatch();
     else if(state.screen === 'timer') body = renderTimer();
+    else if(state.screen === 'askAI') body = renderAskAI();
     app.innerHTML = renderUpdateBanner() + renderStorageBanner() + body;
   }
 
