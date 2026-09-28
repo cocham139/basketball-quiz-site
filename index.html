@@ -772,9 +772,14 @@
 (function(){
   "use strict";
 
-  var APP_VERSION = "1.27";
+  var APP_VERSION = "1.28";
 
   var CHANGELOG = [
+    {version:'1.28', date:'2026-09-28', sections:[
+      {title:'修正', icon:'up', items:[
+        '関連商品カードの商品情報を実際のものに更新'
+      ]}
+    ]},
     {version:'1.27', date:'2026-09-28', sections:[
       {title:'修正', icon:'up', items:[
         '1回10問のうち、関連商品カードがついた問題が必ず1問はふくまれるように調整'
@@ -954,7 +959,7 @@
      発行した本物のリンク・画像URL・価格に差し替えること(url は現状、アフィリエイトIDなしの
      楽天市場検索結果ページを指しているだけで、成果報酬は発生しない)。 */
   var PRODUCT_MASTER = {
-    ball5:   {name:'ミニバス公式5号球', price:null, image:null, url:'https://search.rakuten.co.jp/search/mall/%E3%83%9F%E3%83%8B%E3%83%90%E3%82%B9+5%E5%8F%B7%E7%90%83/'},
+    ball5:   {name:'molten JB5000 5号検定球', price:'¥4,180', image:null, url:'https://hb.afl.rakuten.co.jp/ichiba/57fd1157.641e56e9.57fd1158.57809487/?pc=https%3A%2F%2Fitem.rakuten.co.jp%2Fikurun%2F182202%2F&link_type=hybrid_url&ut=eyJwYWdlIjoiaXRlbSIsInR5cGUiOiJoeWJyaWRfdXJsIiwic2l6ZSI6IjI0MHgyNDAiLCJuYW0iOjEsIm5hbXAiOiJyaWdodCIsImNvbSI6MSwiY29tcCI6ImRvd24iLCJwcmljZSI6MSwiYm9yIjoxLCJjb2wiOjEsImJidG4iOjEsInByb2QiOjAsImFtcCI6ZmFsc2V9'},
     whistle: {name:'バスケ審判用ホイッスル', price:null, image:null, url:'https://search.rakuten.co.jp/search/mall/%E3%83%90%E3%82%B9%E3%82%B1+%E5%AF%A9%E5%88%A4+%E3%83%9B%E3%82%A4%E3%83%83%E3%82%B9%E3%83%AB/'},
     timer:   {name:'ストップウォッチ・タイマー', price:null, image:null, url:'https://search.rakuten.co.jp/search/mall/%E3%82%B9%E3%83%88%E3%83%83%E3%83%97%E3%82%A6%E3%82%A9%E3%83%83%E3%83%81+%E3%83%90%E3%82%B9%E3%82%B1%E3%83%83%E3%83%88/'}
   };
