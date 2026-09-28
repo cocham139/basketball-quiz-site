@@ -324,6 +324,24 @@
   .fb-source{font-size:0.72rem;color:var(--ink-soft);text-align:right;margin-top:8px;opacity:0.85;}
   .q-source{font-size:0.72rem;color:var(--ink-soft);text-align:right;margin:2px 2px 10px;opacity:0.85;}
   .glossary-source{font-size:0.72rem;color:var(--ink-soft);text-align:right;margin-top:6px;opacity:0.85;}
+  .product-card{
+    position:relative;margin-top:12px;padding:10px 10px 26px;
+    background:var(--surface-2);border:2px solid var(--line);border-radius:var(--radius-md);
+  }
+  .product-card-top{display:flex;gap:10px;align-items:center;}
+  .product-card-img{flex:none;width:44px;height:44px;border-radius:10px;object-fit:cover;background:var(--ball);}
+  .product-card-img-fallback{display:flex;align-items:center;justify-content:center;}
+  .product-card-body{flex:1;min-width:0;}
+  .product-card-name{font-size:0.82rem;color:var(--ink);font-weight:700;line-height:1.35;}
+  .product-card-price{font-size:0.76rem;color:var(--ink-soft);margin-top:2px;}
+  .product-card-btn{
+    display:block;width:100%;box-sizing:border-box;margin-top:10px;padding:8px 12px;
+    font-size:0.8rem;text-align:center;white-space:nowrap;box-shadow:none;
+  }
+  .product-card-pr{
+    position:absolute;right:8px;bottom:6px;font-size:0.62rem;color:var(--ink-soft);
+    background:var(--surface);border:1px solid var(--line);border-radius:4px;padding:1px 4px;opacity:0.85;
+  }
 
   .btn{
     display:inline-flex;
@@ -735,6 +753,15 @@
   .bd-track{flex:1;height:12px;border-radius:999px;background:var(--surface-2);border:1px solid var(--line);overflow:hidden;}
   .bd-fill{height:100%;background:var(--cat);border-radius:999px;transition:width 0.5s ease;}
   .bd-frac{font-variant-numeric:tabular-nums;font-size:0.78rem;color:var(--ink-soft);width:36px;text-align:right;}
+  .review-card{display:flex;flex-direction:column;}
+  .review-item{padding:14px 0;border-bottom:1px solid var(--line);}
+  .review-item:last-child{border-bottom:none;}
+  .review-head{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+  .review-num{font-size:0.78rem;color:var(--ink-soft);font-weight:700;}
+  .review-q{font-size:0.88rem;color:var(--ink);font-weight:700;line-height:1.55;margin-bottom:6px;}
+  .review-answer{font-size:0.85rem;margin-bottom:4px;}
+  .review-answer.good{color:var(--good);}
+  .review-answer.bad{color:var(--bad);}
 </style>
 </head>
 <body>
@@ -745,9 +772,15 @@
 (function(){
   "use strict";
 
-  var APP_VERSION = "1.25";
+  var APP_VERSION = "1.26";
 
   var CHANGELOG = [
+    {version:'1.26', date:'2026-09-28', sections:[
+      {title:'新機能', icon:'star', items:[
+        'けっか画面に、全問の振り返り(選んだ回答・正解・解説)を表示するようにした',
+        '一部の問題に関連する道具を紹介する商品カード(PR表示つき)を追加。カードを押しても直接は移動せず、「保護者の方へ」という案内をはさんでから開くようにした'
+      ]}
+    ]},
     {version:'1.25', date:'2026-09-28', sections:[
       {title:'修正', icon:'up', items:[
         '利用規約・プライバシーポリシーのお問い合わせ先メールアドレスを設置'
@@ -909,6 +942,16 @@
     terms:     {type:'internal', screen:'terms'},
     privacy:   {type:'internal', screen:'privacy'},
     tokushoho: {type:'internal', screen:'tokushoho'}
+  };
+
+  /* 問題ごとの「関連商品」マスタ。各問題オブジェクトの productTag でここのキーを参照する。
+     price/url/image はいずれもプレースホルダー。実際に使う際は、もしもアフィリエイト/楽天アフィリエイトで
+     発行した本物のリンク・画像URL・価格に差し替えること(url は現状、アフィリエイトIDなしの
+     楽天市場検索結果ページを指しているだけで、成果報酬は発生しない)。 */
+  var PRODUCT_MASTER = {
+    ball5:   {name:'ミニバス公式5号球', price:null, image:null, url:'https://search.rakuten.co.jp/search/mall/%E3%83%9F%E3%83%8B%E3%83%90%E3%82%B9+5%E5%8F%B7%E7%90%83/'},
+    whistle: {name:'バスケ審判用ホイッスル', price:null, image:null, url:'https://search.rakuten.co.jp/search/mall/%E3%83%90%E3%82%B9%E3%82%B1+%E5%AF%A9%E5%88%A4+%E3%83%9B%E3%82%A4%E3%83%83%E3%82%B9%E3%83%AB/'},
+    timer:   {name:'ストップウォッチ・タイマー', price:null, image:null, url:'https://search.rakuten.co.jp/search/mall/%E3%82%B9%E3%83%88%E3%83%83%E3%83%97%E3%82%A6%E3%82%A9%E3%83%83%E3%83%81+%E3%83%90%E3%82%B9%E3%82%B1%E3%83%83%E3%83%88/'}
   };
 
   function tutorialSteps(){
@@ -1775,7 +1818,7 @@
       diagram:{type:'pivot'}, source:'第25条(トラベリング)'},
     {cat:'rule', term:'アウトオブバウンズ', q:'ミニバスの試合で、ボールやボールを持った選手の足が、コートの外側のライン(サイドラインやエンドライン)に触れると何になる?', choices:['アウトオブバウンズ(相手ボールのスローイン)','タイムアウト','ジャンプボール','そのままプレー続行'], correct:0,
       explain:'ボールやそれを持つ選手がラインの外に出ると「アウトオブバウンズ」となり、相手チームのスローインで再開します。ライン自体もコートの外としてあつかわれます。',
-      diagram:{type:'outOfBounds'}, source:'第23条(プレーヤー/ボールのアウトオブバウンズ)'},
+      diagram:{type:'outOfBounds'}, source:'第23条(プレーヤー/ボールのアウトオブバウンズ)', productTag:'ball5'},
     {cat:'rule', term:'オルタネイティングポゼッション', q:'ミニバスの試合で、2人の選手がボールを同時につかんで動けなくなる「ヘルドボール」になったとき、次のボールは誰のものになる?', choices:['交互に所有権が入れかわる「矢印」にしたがって決める','必ずせが高い方の選手のチーム','必ず先にさわった方のチーム','もう一度はじめからジャンプボールをする'], correct:0,
       explain:'試合開始のジャンプボール以降、ヘルドボールなどが起きたら「オルタネイティングポゼッション(交互possession)」の矢印にしたがって、交互にボールをもらいます。この矢印はスコアラーズテーブルに置かれています。',
       diagram:{type:'altPossession'}, source:'第12条(ジャンプボール、オルタネイティングポゼッション)'},
@@ -1814,7 +1857,7 @@
       diagram:{type:'referee', pose:'twohands'}, source:'巻末資料A 審判のシグナル No.6'},
     {cat:'ref', term:'笛(ホイッスル)を吹くタイミング', q:'審判が笛を吹いてプレーを止めるのは、どんなときが正しい?', choices:['反則やバイオレーション(ルールいはん)があったとき','応援がさかんなとき','選手がジャンプしたとき','ボールがリングに当たったとき'], correct:0,
       explain:'審判は反則やバイオレーション(ルール違反)を見つけたときに笛を吹いてプレーを止め、そのあとハンドサインで内容を伝えます。',
-      diagram:{type:'referee', pose:'whistle'}, source:'第47条(審判:任務と権限)'},
+      diagram:{type:'referee', pose:'whistle'}, source:'第47条(審判:任務と権限)', productTag:'whistle'},
     {cat:'ref', term:'得点なし(ノーカウント)のサイン', q:'審判が両うでを胸の高さで大きく横に振るサインは、何を表す?', choices:['得点は入らない(ノーカウント)','タイムアウト','アンスポーツマンライクファウル','3ポイント成功'], correct:0,
       explain:'両うでを胸の高さで横に大きく振るサインは「ノーカウント(得点なし)」を表します。片うでを頭の上に伸ばして手首をにぎる「アンスポーツマンライクファウル」のサインとまちがえないようにしましょう。',
       diagram:{type:'referee', pose:'noscore'}, source:'巻末資料A 審判のシグナル No.11'},
@@ -2027,7 +2070,7 @@
       diagram:{type:'clockTrigger', kind:'whistle'}, source:'第49条(タイマー:任務)'},
     {cat:'timer', term:'ショットクロックの14秒ルール', q:'ミニバスの試合で、味方のシュートがリングに当たってはずれ、そのまま味方自身がオフェンスリバウンドを取った(ボールのコントロールが変わらなかった)とき、ショットクロックの残りが14秒以上だった場合はどうする?', choices:['そのまま(リセットしない)残りの秒数から続ける','24秒にリセットする','14秒にリセットする','いったん止めて0にする'], correct:0,
       explain:'ショットが外れても同じチームがそのままボールをコントロールし続けた場合、残りが14秒以上あればリセットせず続けます。残りが13秒以下のときだけ14秒にリセットします(相手にボールが渡ったときは24秒リセット)。実際の試合でオフィシャルが最も迷いやすいポイントの一つです。',
-      diagram:{type:'clockTrigger', kind:'rebound'}, source:'第29条(24秒ルール)'},
+      diagram:{type:'clockTrigger', kind:'rebound'}, source:'第29条(24秒ルール)', productTag:'timer'},
     {cat:'timer', term:'選手交代のタイミング(クォーターによる違い)', q:'JBA公式のミニバスケットボールのルールでは、第1〜第3クォーターの間、選手交代ができるのはいつ?', choices:['プレーのインターバル中とハーフタイム中だけ','いつでも(プレー中でも)交代できる','各クォーターの最初の1分間だけ','タイムアウト中は交代できない'], correct:0,
       explain:'ミニバスでは第1〜第3クォーターの間、交代はプレーのインターバル中(クォーターの間)とハーフタイム中しかできません。第4クォーターと各オーバータイムだけは「交代が認められる時機」ならいつでも交代できるようになります。',
       diagram:{type:'subBoard'}, source:'第19条(交代)'},
@@ -2130,6 +2173,8 @@
     customDrillError:'',
     showTutorial:false,
     tutorialStep:0,
+    answerLog:[],
+    productGateTag:null,
     profileEditMode:false,
     updateAvailable:null,
     shoutText:'',
@@ -2177,6 +2222,7 @@
     state.screen='quiz'; state.idx=0; state.score=0; state.answered=false; state.selected=-1;
     state.activeQuestions = pickRound(state.mode);
     state.catStats = freshCatStats(state.mode);
+    state.answerLog = [];
     render();
   }
 
@@ -2206,6 +2252,7 @@
     if(state.answered) return;
     state.answered = true;
     state.selected = i;
+    state.answerLog[state.idx] = i;
     var q = state.activeQuestions[state.idx];
     var cs = state.catStats[q.cat];
     cs.t++;
@@ -2298,6 +2345,44 @@
       '</div>';
   }
 
+  function renderProductCard(tag){
+    var p = PRODUCT_MASTER[tag];
+    if(!p) return '';
+    var img = p.image ?
+      '<img class="product-card-img" src="'+p.image+'" alt="">' :
+      '<div class="product-card-img product-card-img-fallback">'+ballIconSVG('#fff',22)+'</div>';
+    return '<div class="product-card">' +
+      '<div class="product-card-top">' +
+        img +
+        '<div class="product-card-body">' +
+          '<div class="product-card-name">'+escapeHtml(p.name)+'</div>' +
+          (p.price ? '<div class="product-card-price">'+escapeHtml(p.price)+'</div>' : '') +
+        '</div>' +
+      '</div>' +
+      '<button class="btn product-card-btn" onclick="openProductGate(\''+tag+'\')">くわしく見る</button>' +
+      '<span class="product-card-pr">PR</span>' +
+    '</div>';
+  }
+
+  window.openProductGate = function(tag){ state.productGateTag = tag; render(); };
+  window.closeProductGate = function(){ state.productGateTag = null; render(); };
+
+  function renderProductGate(){
+    if(!state.productGateTag) return '';
+    var p = PRODUCT_MASTER[state.productGateTag];
+    if(!p) return '';
+    return '<div class="celebrate-overlay" onclick="closeProductGate()">' +
+      '<div class="tutorial-card" onclick="event.stopPropagation()">' +
+        '<h3 class="tutorial-title">保護者の方へ</h3>' +
+        '<p class="tutorial-body">ここから先は、買い物のページに移動します。おうちの人といっしょに見てね。</p>' +
+        '<div class="start-actions">' +
+          '<a class="btn" href="'+p.url+'" target="_blank" rel="noopener sponsored" onclick="closeProductGate()">保護者といっしょに見る →</a>' +
+          '<button class="btn btn-ghost" onclick="closeProductGate()">やめておく</button>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  }
+
   function renderQuiz(){
     var q = state.activeQuestions[state.idx];
     var cat = CATS[q.cat];
@@ -2361,6 +2446,27 @@
       '</div>';
     }).join('');
 
+    var review = state.activeQuestions.map(function(q, i){
+      var sel = state.answerLog[i];
+      var hasAnswer = typeof sel === 'number' && sel >= 0;
+      var isCorrect = hasAnswer && sel === q.correct;
+      var cat = CATS[q.cat];
+      return '<div class="review-item">' +
+        '<div class="review-head">' +
+          '<span class="pill" style="--cat:var('+cat.cssvar+');--cat-ink:var('+cat.ink+')">'+catIcon(q.cat,'currentColor',12)+cat.label+'</span>' +
+          '<span class="review-num">もんだい '+(i+1)+'</span>' +
+        '</div>' +
+        '<div class="review-q">'+q.q+'</div>' +
+        '<div class="review-answer '+(isCorrect?'good':'bad')+'">' +
+          (hasAnswer ? 'あなたの回答: '+q.choices[sel]+(isCorrect?' ○':' ×') : '(未回答)') +
+        '</div>' +
+        (!isCorrect ? '<div class="fb-correct">正解: '+q.choices[q.correct]+'</div>' : '') +
+        '<div class="fb-explain">'+q.explain+'</div>' +
+        (q.source ? '<div class="fb-source">出典: '+q.source+'</div>' : '') +
+        (q.productTag ? renderProductCard(q.productTag) : '') +
+      '</div>';
+    }).join('');
+
     return renderScoreboard(false) +
       '<div class="card result-hero">' +
         trophySVG() +
@@ -2373,7 +2479,10 @@
           '<button class="btn btn-ghost" onclick="showGlossary()">'+courtIconSVG('currentColor',16)+' 用語集(じてん)を見る</button>' +
           '<button class="link-btn" onclick="backToStart()">スタート画面へ</button>' +
         '</div>' +
-      '</div>';
+      '</div>' +
+      '<h3 class="section-title">振り返り</h3>' +
+      '<div class="card review-card">'+review+'</div>' +
+      renderProductGate();
   }
 
   function renderGlossary(){
