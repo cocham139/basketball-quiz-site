@@ -1,4 +1,4 @@
-var CACHE_VERSION = 'bhq-v1.19';
+var CACHE_VERSION = 'bhq-v1.32';
 var CORE_ASSETS = [
   './', './index.html', './manifest.json',
   './icons/icon-192.png', './icons/icon-512.png',
