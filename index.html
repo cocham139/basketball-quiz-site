@@ -424,6 +424,9 @@
   .jishu-pick-row{display:flex;flex-wrap:wrap;gap:8px;}
   .jishu-pick-row select{flex:1 1 140px;}
   .jishu-pick-row .jishu-custom-input{flex:1.4 1 180px;}
+  .drill-item-list{display:flex;flex-direction:column;gap:8px;margin-top:8px;}
+  .drill-item-row{display:flex;gap:8px;align-items:center;}
+  .drill-item-row .text-input{flex:1;}
   .profile-head{display:flex;align-items:center;gap:14px;}
   .profile-name{font-family:var(--font-display);font-size:1.15rem;color:var(--ink);}
   .profile-sub{font-size:0.82rem;color:var(--ink-soft);}
@@ -671,9 +674,15 @@
 (function(){
   "use strict";
 
-  var APP_VERSION = "1.16";
+  var APP_VERSION = "1.17";
 
   var CHANGELOG = [
+    {version:'1.17', date:'2026-09-28', sections:[
+      {title:'変更', icon:'up', items:[
+        '自主トレの声がけメッセージを、まちがえたときも元気になれる言葉に変更',
+        '「ふじのドリル」を、だれでも自由に項目と名前を決められる「オリジナル自主トレメニュー」機能に変更。自主トレ画面から作成・編集・削除ができるようになった'
+      ]}
+    ]},
     {version:'1.16', date:'2026-09-28', sections:[
       {title:'修正', icon:'up', items:[
         '審判サイン「アンスポーツマンライクファウル」のイラストと説明が、JBA公式資料と違っていたのを修正(正しくは、頭の上に伸ばしたうでの手首をもう一方の手でにぎるサイン)',
@@ -783,16 +792,11 @@
     player:{label:"せんしゅ編", cats:['rule','ref','pos','tac']},
     official:{label:"オフィシャル編", cats:['scorer','timer']}
   };
-  var FUJINO_ITEMS = [
-    {key:'squat', label:'スクワット'},
-    {key:'hotwater', label:'お湯にぎにぎ'},
-    {key:'shootform', label:'シュートフォーム確認'}
-  ];
-  var JISHU_TYPES = ['ラダー','フリースロー(シュート練)','マイカンドリル','フットワーク','ハンドリング','ふじのドリル'];
+  var JISHU_TYPES = ['ラダー','フリースロー(シュート練)','マイカンドリル','フットワーク','ハンドリング'];
   var AVATAR_EMOJIS = ['🏀','⭐','🔥','🌟','🐯','🐻','🦁','🐶','🐱','🎯','🚀','🍀'];
 
   var SHOUT_GOOD = ['おっけーーーーーい！！！！','いいんじゃない？！いいんじゃない？！','おっけいおっけい！','自信持ってやってけ！！！'];
-  var SHOUT_BAD = ['わからんひとやねー！！！','おまえは馬か鹿か？！','それがお前のこころなんだって！！！','甘いんじゃないのー？！'];
+  var SHOUT_BAD = ['おしい！！もう少し！！','だいじょうぶ、次いこう！！','ナイストライ！次はいけるよ！！','あるある！次で取り返そう！！'];
   function pickShout(list){ return list[Math.floor(Math.random() * list.length)]; }
 
   function escapeHtml(s){
@@ -1980,6 +1984,8 @@
     profileDraft:{nickname:'', experience:'', specialty:'', avatarEmoji:'🏀'},
     jishuPick:JISHU_TYPES[0],
     jishuCustomText:'',
+    customDrillDraft:{name:'', items:[]},
+    customDrillError:'',
     profileEditMode:false,
     updateAvailable:null,
     shoutText:'',
@@ -2266,12 +2272,23 @@
 
   function normalizeProfile(d){
     d = d || {};
+    var customDrill = d.customDrill || null;
+    var customDrillChecklist = d.customDrillChecklist || {};
+    if(!customDrill && d.fujinoChecklist){
+      customDrill = {name:'ふじのドリル', items:[
+        {key:'squat', label:'スクワット'},
+        {key:'hotwater', label:'お湯にぎにぎ'},
+        {key:'shootform', label:'シュートフォーム確認'}
+      ]};
+      customDrillChecklist = d.fujinoChecklist;
+    }
     return {
       nickname: d.nickname || '名無し',
       experience: d.experience || '',
       specialty: d.specialty || '',
       avatarEmoji: d.avatarEmoji || '🏀',
-      fujinoChecklist: d.fujinoChecklist || {squat:false, hotwater:false, shootform:false},
+      customDrill: customDrill,
+      customDrillChecklist: customDrillChecklist,
       jishuLog: d.jishuLog || [],
       notes: d.notes || []
     };
@@ -2341,7 +2358,8 @@
     list.forEach(function(p,i){ if(p.id === state.profileId) idx = i; });
     if(idx < 0) return;
     list[idx] = Object.assign({}, list[idx], {
-      fujinoChecklist: state.profile.fujinoChecklist,
+      customDrill: state.profile.customDrill,
+      customDrillChecklist: state.profile.customDrillChecklist,
       jishuLog: state.profile.jishuLog,
       notes: state.profile.notes
     });
@@ -2405,7 +2423,7 @@
       return;
     }
     var id = localGenId();
-    var data = Object.assign({id:id, fujinoChecklist:{squat:false, hotwater:false, shootform:false}, jishuLog:[], notes:[]}, basics);
+    var data = Object.assign({id:id, customDrill:null, customDrillChecklist:{}, jishuLog:[], notes:[]}, basics);
     list.push(data);
     localSaveProfiles(list);
     state.profile = normalizeProfile(data);
@@ -2417,14 +2435,16 @@
 
   window.showProfile = function(){ state.screen = 'profile'; render(); };
 
-  window.toggleFujinoItem = function(key){
+  window.toggleCustomDrillItem = function(key){
     if(!state.profile){ window.showProfileGate(); return; }
-    var cl = state.profile.fujinoChecklist;
+    var drill = state.profile.customDrill;
+    if(!drill) return;
+    var cl = state.profile.customDrillChecklist;
     cl[key] = !cl[key];
-    var allDone = FUJINO_ITEMS.every(function(it){ return cl[it.key]; });
+    var allDone = drill.items.every(function(it){ return cl[it.key]; });
     if(allDone){
-      state.profile.jishuLog.push({type:'ふじのドリル', at: new Date().toISOString()});
-      FUJINO_ITEMS.forEach(function(it){ cl[it.key] = false; });
+      state.profile.jishuLog.push({type: drill.name, at: new Date().toISOString()});
+      drill.items.forEach(function(it){ cl[it.key] = false; });
       triggerCelebrate();
     }
     render();
@@ -2447,6 +2467,61 @@
     render();
     persistProfile();
   };
+
+  window.showCustomDrillEdit = function(){
+    if(!state.profile){ window.showProfileGate(); return; }
+    var drill = state.profile.customDrill;
+    state.customDrillDraft = drill ?
+      {name: drill.name, items: drill.items.map(function(it){ return {key: it.key, label: it.label}; })} :
+      {name:'', items:[{key: genId(), label:''}]};
+    state.customDrillError = '';
+    state.screen = 'customdrill-edit';
+    render();
+  };
+  window.updateCustomDrillName = function(v){ state.customDrillDraft.name = v; };
+  window.updateCustomDrillItemLabel = function(key, v){
+    state.customDrillDraft.items.forEach(function(it){ if(it.key === key) it.label = v; });
+  };
+  window.addCustomDrillItem = function(){
+    state.customDrillDraft.items.push({key: genId(), label:''});
+    render();
+  };
+  window.removeCustomDrillItem = function(key){
+    state.customDrillDraft.items = state.customDrillDraft.items.filter(function(it){ return it.key !== key; });
+    render();
+  };
+  window.saveCustomDrill = function(){
+    if(!state.profile) return;
+    var name = (state.customDrillDraft.name||'').trim();
+    var items = state.customDrillDraft.items
+      .map(function(it){ return {key: it.key, label: (it.label||'').trim()}; })
+      .filter(function(it){ return it.label; });
+    if(!name || !items.length){
+      state.customDrillError = 'メニューの名前と、1つ以上のチェック項目を入力してね。';
+      render();
+      return;
+    }
+    state.customDrillError = '';
+    var oldChecklist = state.profile.customDrillChecklist || {};
+    var newChecklist = {};
+    items.forEach(function(it){ newChecklist[it.key] = !!oldChecklist[it.key]; });
+    state.profile.customDrill = {name: name, items: items};
+    state.profile.customDrillChecklist = newChecklist;
+    state.jishuPick = name;
+    state.screen = 'jishu';
+    render();
+    persistProfile();
+  };
+  window.deleteCustomDrill = function(){
+    if(!state.profile) return;
+    state.profile.customDrill = null;
+    state.profile.customDrillChecklist = {};
+    state.jishuPick = JISHU_TYPES[0];
+    state.screen = 'jishu';
+    render();
+    persistProfile();
+  };
+  window.cancelCustomDrillEdit = function(){ state.screen = 'jishu'; render(); };
 
   function logRows(log){
     return log.slice().reverse().slice(0,10).map(function(e){
@@ -2503,7 +2578,7 @@
     var p = state.profile;
     if(!p) return renderProfileGate();
     var avatar = '<span class="avatar-fallback lg">'+p.avatarEmoji+'</span>';
-    var fujinoCount = p.jishuLog.filter(function(e){ return e.type === 'ふじのドリル'; }).length;
+    var drillCount = p.customDrill ? p.jishuLog.filter(function(e){ return e.type === p.customDrill.name; }).length : 0;
     return '<div class="scoreboard"><div class="title">'+courtIconSVG('currentColor',18)+' プロフィール</div><button class="back-btn" onclick="backToStart()">← もどる</button></div>' +
       '<div class="card">' +
         '<div class="profile-head">'+avatar+
@@ -2516,7 +2591,7 @@
         '</div>' +
         '<div class="stat-row">' +
           '<div class="stat-box"><div class="stat-num">'+p.jishuLog.length+'</div><div class="stat-label">自主トレ 記録数</div></div>' +
-          '<div class="stat-box"><div class="stat-num">'+fujinoCount+'</div><div class="stat-label">ふじのドリル 完了回数</div></div>' +
+          (p.customDrill ? '<div class="stat-box"><div class="stat-num">'+drillCount+'</div><div class="stat-label">'+escapeHtml(p.customDrill.name)+' 完了回数</div></div>' : '') +
         '</div>' +
         '<h3 class="section-title">さいきんの自主トレ</h3>' +
         '<div class="log-list">'+logRows(p.jishuLog)+'</div>' +
@@ -2532,17 +2607,20 @@
       '</div>';
   }
   function renderJishu(){
-    var options = JISHU_TYPES.map(function(t){ return '<option value="'+t+'"'+(t===state.jishuPick?' selected':'')+'>'+t+'</option>'; }).join('');
-    var isFujino = state.jishuPick === 'ふじのドリル';
-    var cl = state.profile ? state.profile.fujinoChecklist : {};
-    var customInput = isFujino ? '' :
+    var drill = state.profile ? state.profile.customDrill : null;
+    var extraOption = (drill && drill.items.length) ?
+      '<option value="'+escapeHtml(drill.name)+'"'+(state.jishuPick===drill.name?' selected':'')+'>'+escapeHtml(drill.name)+'</option>' : '';
+    var options = JISHU_TYPES.map(function(t){ return '<option value="'+t+'"'+(t===state.jishuPick?' selected':'')+'>'+t+'</option>'; }).join('') + extraOption;
+    var isCustomDrill = !!(drill && drill.items.length && state.jishuPick === drill.name);
+    var cl = state.profile ? state.profile.customDrillChecklist : {};
+    var customInput = isCustomDrill ? '' :
       '<input class="text-input jishu-custom-input" placeholder="または自由に入力(例: ドリブル100回)" oninput="updateJishuCustom(this.value)" value="'+escapeHtml(state.jishuCustomText||'')+'">';
-    var action = isFujino ?
+    var action = isCustomDrill ?
       ('<p class="sub">全部チェックすると自主トレとして1回記録されるよ。</p>' +
-       '<div class="check-list">' + FUJINO_ITEMS.map(function(it){
+       '<div class="check-list">' + drill.items.map(function(it){
          var checked = !!cl[it.key];
-         return '<button class="check-row'+(checked?' checked':'')+'" onclick="toggleFujinoItem(\''+it.key+'\')">' +
-           '<span class="check-box">'+(checked?'✓':'')+'</span><span>'+it.label+'</span></button>';
+         return '<button class="check-row'+(checked?' checked':'')+'" onclick="toggleCustomDrillItem(\''+it.key+'\')">' +
+           '<span class="check-box">'+(checked?'✓':'')+'</span><span>'+escapeHtml(it.label)+'</span></button>';
        }).join('') + '</div>') :
       ('<button class="btn" onclick="logJishuDone()">'+ballIconSVG('#fff',16)+' できた!記録する</button>');
     return '<div class="scoreboard"><div class="title">'+courtIconSVG('currentColor',18)+' 自主トレ記録</div><button class="back-btn" onclick="backToStart()">← もどる</button></div>' +
@@ -2553,6 +2631,7 @@
           customInput +
         '</div>' +
         action +
+        '<button class="link-btn" style="margin-top:8px" onclick="showCustomDrillEdit()">'+(drill?'オリジナルメニューを編集する':'＋オリジナルの自主トレメニューをつくる')+'</button>' +
         (!state.profile ? '<p class="meta-line">記録するにはプロフィールが必要だよ。 <button class="link-btn" onclick="showProfileGate()">作る/えらぶ</button></p>' : '') +
         '<h3 class="section-title">カレンダー</h3>' +
         renderTrainingCalendar(state.profile ? state.profile.jishuLog : []) +
@@ -2560,6 +2639,30 @@
         '<div class="log-list">'+(state.profile ? logRows(state.profile.jishuLog) : '')+'</div>' +
       '</div>' +
       renderCelebration();
+  }
+
+  function renderCustomDrillEdit(){
+    var d = state.customDrillDraft;
+    var itemRows = d.items.map(function(it){
+      return '<div class="drill-item-row">' +
+        '<input class="text-input" placeholder="れい: スクワット" oninput="updateCustomDrillItemLabel(\''+it.key+'\', this.value)" value="'+escapeHtml(it.label)+'">' +
+        '<button class="btn btn-ghost small-btn" onclick="removeCustomDrillItem(\''+it.key+'\')">けす</button>' +
+      '</div>';
+    }).join('');
+    return '<div class="scoreboard"><div class="title">'+courtIconSVG('currentColor',18)+' オリジナルメニュー</div><button class="back-btn" onclick="cancelCustomDrillEdit()">← もどる</button></div>' +
+      '<div class="card">' +
+        '<p class="sub">自分だけの自主トレメニューを作って、名前をつけよう。全部チェックすると自主トレとして記録されるよ。</p>' +
+        '<label class="field-label">メニューの名前</label>' +
+        '<input class="text-input" placeholder="れい: わたしのとくべつメニュー" oninput="updateCustomDrillName(this.value)" value="'+escapeHtml(d.name)+'">' +
+        '<label class="field-label" style="margin-top:10px">チェック項目</label>' +
+        '<div class="drill-item-list">'+itemRows+'</div>' +
+        '<button class="btn btn-ghost small-btn" onclick="addCustomDrillItem()">＋項目をふやす</button>' +
+        (state.customDrillError ? '<p class="meta-line" style="color:#c0392b">'+escapeHtml(state.customDrillError)+'</p>' : '') +
+        '<div class="start-actions" style="margin-top:14px">' +
+          '<button class="btn" onclick="saveCustomDrill()">'+ballIconSVG('#fff',16)+' 保存する</button>' +
+          (state.profile && state.profile.customDrill ? '<button class="btn btn-ghost" onclick="deleteCustomDrill()">このメニューを削除する</button>' : '') +
+        '</div>' +
+      '</div>';
   }
 
   /* ---------------- 自主トレカレンダー ---------------- */
@@ -3005,6 +3108,7 @@
     else if(state.screen === 'profileEdit') body = renderProfileEdit();
     else if(state.screen === 'profile') body = renderProfile();
     else if(state.screen === 'jishu') body = renderJishu();
+    else if(state.screen === 'customdrill-edit') body = renderCustomDrillEdit();
     else if(state.screen === 'changelog') body = renderChangelog();
     else if(state.screen === 'notebook') body = renderNotebook();
     else if(state.screen === 'scoreboardTool') body = renderScoreboardTool();
