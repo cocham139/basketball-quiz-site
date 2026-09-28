@@ -699,9 +699,15 @@
 (function(){
   "use strict";
 
-  var APP_VERSION = "1.19";
+  var APP_VERSION = "1.20";
 
   var CHANGELOG = [
+    {version:'1.20', date:'2026-09-28', sections:[
+      {title:'修正', icon:'up', items:[
+        '自主トレの記録一覧で、種類名がHTMLとしてそのまま表示されてしまう箇所を修正(表示のエスケープもれ)',
+        'ホーム画面追加時のオフラインキャッシュのバージョン管理がずれていたのを修正'
+      ]}
+    ]},
     {version:'1.19', date:'2026-09-28', sections:[
       {title:'修正', icon:'up', items:[
         '「バスケはかせに聞く」でエラーになる不具合を修正。AIのしくみをより安定した方式に切りかえた',
