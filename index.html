@@ -772,9 +772,14 @@
 (function(){
   "use strict";
 
-  var APP_VERSION = "1.26";
+  var APP_VERSION = "1.27";
 
   var CHANGELOG = [
+    {version:'1.27', date:'2026-09-28', sections:[
+      {title:'修正', icon:'up', items:[
+        '1回10問のうち、関連商品カードがついた問題が必ず1問はふくまれるように調整'
+      ]}
+    ]},
     {version:'1.26', date:'2026-09-28', sections:[
       {title:'新機能', icon:'star', items:[
         'けっか画面に、全問の振り返り(選んだ回答・正解・解説)を表示するようにした',
@@ -2127,6 +2132,17 @@
     return Object.assign({}, q, {choices:choices, correct:correct});
   }
 
+  function ensureProductTagInRound(picked, pool){
+    if(picked.some(function(q){ return !!q.productTag; })) return picked;
+    var taggedPool = pool.filter(function(q){ return !!q.productTag; });
+    if(!taggedPool.length) return picked;
+    var replacement = taggedPool[Math.floor(Math.random() * taggedPool.length)];
+    var swapIdx = Math.floor(Math.random() * picked.length);
+    var next = picked.slice();
+    next[swapIdx] = replacement;
+    return next;
+  }
+
   function pickRound(mode){
     var cats = shuffle(MODES[mode].cats.slice());
     var pool = poolForMode(mode);
@@ -2142,6 +2158,7 @@
       var take = base + (i < remainder ? 1 : 0);
       picked = picked.concat(shuffle(byCat[k]).slice(0, take));
     });
+    picked = ensureProductTagInRound(picked, pool);
     return shuffle(picked).map(shuffleChoices);
   }
 
