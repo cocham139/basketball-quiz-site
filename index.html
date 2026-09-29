@@ -778,9 +778,15 @@
 (function(){
   "use strict";
 
-  var APP_VERSION = "1.36";
+  var APP_VERSION = "1.37";
 
   var CHANGELOG = [
+    {version:'1.37', date:'2026-09-29', sections:[
+      {title:'改善', icon:'up', items:[
+        '結果画面のシェアカードを満点以外でも作れるようにした(「けっこう頑張った!」をきろくとして残せるように)',
+        '自主トレの連続記録の節目を、30日より先も30日ごとにずっと発行し続けるようにした(3・7・14・30・60・90…と続く)'
+      ]}
+    ]},
     {version:'1.36', date:'2026-09-29', sections:[
       {title:'新機能', icon:'star', items:[
         '「バスケはかせに聞く」を会話の文脈を覚えたまま続けられるチャットに改良(直近8ターンまで)',
@@ -1059,6 +1065,13 @@
   };
   var JISHU_TYPES = ['ラダー','フリースロー(シュート練)','マイカンドリル','フットワーク','ハンドリング'];
   var STREAK_MILESTONES = [3, 7, 14, 30];
+  var STREAK_MILESTONE_INTERVAL = 30;
+
+  function isStreakMilestone(count){
+    if(STREAK_MILESTONES.indexOf(count) !== -1) return true;
+    var last = STREAK_MILESTONES[STREAK_MILESTONES.length - 1];
+    return count > last && count % STREAK_MILESTONE_INTERVAL === 0;
+  }
   var CAP_DOWNLOADS = null;
   function initDownloadsCapability(){
     if(!(window.claude && typeof window.claude.use === 'function')) return;
@@ -2823,14 +2836,13 @@
       '</div>';
     }).join('');
 
-    var isPerfect = total > 0 && state.score === total;
     return renderScoreboard(false) +
       '<div class="card result-hero">' +
         trophySVG() +
         '<div class="result-score">'+state.score+'<small> / '+total+'</small></div>' +
         '<div class="rank-badge">'+rank+'</div>' +
         '<p class="result-msg">'+msg+'</p>' +
-        (isPerfect ? '<button class="btn ask-ai-btn" onclick="openShareCard()">'+ballIconSVG('#fff',16)+' 満点シェアカードを作る</button>' : '') +
+        (total > 0 ? '<button class="btn ask-ai-btn" onclick="openShareCard()">'+ballIconSVG('#fff',16)+' きろくシェアカードを作る</button>' : '') +
         '<div class="breakdown">'+rows+'</div>' +
         '<div class="start-actions">' +
           '<button class="btn" onclick="restartQuiz()">'+ballIconSVG('#fff',18)+' もういちど挑戦</button>' +
@@ -3220,7 +3232,7 @@
 
   function celebrateOrShareStreak(){
     var streak = updateJishuStreak(state.profile);
-    if(STREAK_MILESTONES.indexOf(streak.count) !== -1){
+    if(isStreakMilestone(streak.count)){
       state.shareCard = {kind:'streak', count: streak.count};
     } else {
       triggerCelebrate();
@@ -3616,7 +3628,7 @@
 
   /* ---------------- シェアカード(継続の可視化) ---------------- */
   window.openShareCard = function(){
-    state.shareCard = {kind:'perfect', total: state.activeQuestions.length, modeLabel: MODES[state.mode].label};
+    state.shareCard = {kind:'result', score: state.score, total: state.activeQuestions.length, modeLabel: MODES[state.mode].label};
     render();
   };
   window.closeShareCard = function(){
@@ -3659,7 +3671,9 @@
   };
 
   function shareCardTitle(card){
-    if(card.kind === 'perfect') return card.modeLabel + 'で満点達成!';
+    if(card.kind === 'result'){
+      return (card.score === card.total) ? (card.modeLabel+'で満点達成!') : (card.modeLabel+' れんしゅうきろく!');
+    }
     if(card.kind === 'streak') return '自主トレ '+card.count+'日れんぞく達成!';
     return 'たっせい!';
   }
@@ -3677,6 +3691,16 @@
         '</div>' +
       '</div>' +
     '</div>';
+  }
+
+  function drawFittedText(ctx, text, x, y, maxWidth, weight, family, maxSize, minSize){
+    var size = maxSize;
+    while(size > minSize){
+      ctx.font = weight+' '+size+'px '+family;
+      if(ctx.measureText(text).width <= maxWidth) break;
+      size -= 2;
+    }
+    ctx.fillText(text, x, y);
   }
 
   function drawShareCard(){
@@ -3703,12 +3727,14 @@
 
       ctx.textAlign = 'center';
       ctx.fillStyle = '#2B2118';
-      ctx.font = '700 36px "Mochiy Pop One", "Zen Maru Gothic", sans-serif';
-      var title = card.kind === 'perfect' ? (card.modeLabel+' 満点達成!') : (card.count+'日れんぞく達成!');
-      ctx.fillText(title, w/2, 360);
+      var isPerfect = card.kind === 'result' && card.score === card.total;
+      var title = card.kind === 'result' ?
+        (isPerfect ? (card.modeLabel+' 満点達成!') : (card.modeLabel+' れんしゅうきろく!')) :
+        (card.count+'日れんぞく達成!');
+      drawFittedText(ctx, title, w/2, 360, w-70, '700', '"Mochiy Pop One", "Zen Maru Gothic", sans-serif', 36, 22);
 
       ctx.font = '400 22px "Zen Maru Gothic", sans-serif';
-      var sub = card.kind === 'perfect' ? (card.total+'問中 '+card.total+'問正解!') : '自主トレ、よくがんばったね!';
+      var sub = card.kind === 'result' ? (card.total+'問中 '+card.score+'問正解!') : '自主トレ、よくがんばったね!';
       ctx.fillText(sub, w/2, 405);
 
       if(state.profile && state.profile.nickname){
