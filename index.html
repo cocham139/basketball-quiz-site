@@ -778,9 +778,15 @@
 (function(){
   "use strict";
 
-  var APP_VERSION = "1.37";
+  var APP_VERSION = "1.38";
 
   var CHANGELOG = [
+    {version:'1.38', date:'2026-09-29', sections:[
+      {title:'修正', icon:'up', items:[
+        '「バスケはかせに聞く」の送信キーをShift+Enter=送信・Enter=改行に変更(日本語入力の変換確定でEnterを押しても誤って送信されないように)',
+        'スタート画面・チュートリアル・使い方ページの文言の誤字を修正(「といるたびに」→「解くたびに」)'
+      ]}
+    ]},
     {version:'1.37', date:'2026-09-29', sections:[
       {title:'改善', icon:'up', items:[
         '結果画面のシェアカードを満点以外でも作れるようにした(「けっこう頑張った!」をきろくとして残せるように)',
@@ -1043,7 +1049,7 @@
 
   function tutorialSteps(){
     return [
-      {icon: ballIconSVG('#fff',28), title:'クイズに挑戦しよう', body:'「せんしゅ編」「オフィシャル編」から4択クイズに挑戦できるよ。といるたびに問題が変わるから、何度でも楽しめるよ!'},
+      {icon: ballIconSVG('#fff',28), title:'クイズに挑戦しよう', body:'「せんしゅ編」「オフィシャル編」から4択クイズに挑戦できるよ。解くたびに問題が変わるから、何度でも楽しめるよ!'},
       {icon: courtIconSVG('#fff',28), title:'用語集(じてん)で調べよう', body:'わからない言葉やルールが出てきたら、「用語集」でいつでも調べられるよ。'},
       {icon: tacticsIconSVG('#fff',28), title:'自主トレを記録しよう', body:'練習したメニューを記録して、カレンダーにスタンプをためよう。自分だけのオリジナルメニューも自由に作れるよ。'},
       {icon: pencilIconSVG('#fff',28), title:'バスケノートでメモしよう', body:'気づいたことや、コーチに言われたことをメモしておけるノート機能もあるよ。'},
@@ -2693,7 +2699,7 @@
         '<div class="top-row">'+profileChip()+'</div>' +
         hoopIllustSVG() +
         '<h1>バスケ はかせクイズ</h1>' +
-        '<p class="sub">ミニバスの試合で実際に出てくるルール・しんぱんのサイン・チームディフェンス・さくせんを、4択(たく)クイズでたしかめよう。といるたびに問題が変わるよ!</p>' +
+        '<p class="sub">ミニバスの試合で実際に出てくるルール・しんぱんのサイン・チームディフェンス・さくせんを、4択(たく)クイズでたしかめよう。解くたびに問題が変わるよ!</p>' +
         '<div class="mode-grid">' + modeCard('player') + modeCard('official') + weakEntryCard() + '</div>' +
         '<div class="start-actions">' +
           '<button class="btn btn-ghost" onclick="showHelp()">'+courtIconSVG('currentColor',16)+' 使い方を見る</button>' +
@@ -2908,7 +2914,7 @@
 
   function helpSections(){
     return [
-      {icon: ballIconSVG('#fff',20), title:'クイズに挑戦しよう', body:'「せんしゅ編」「オフィシャル編」からモードをえらんで、4択クイズに挑戦できます。1回10問、といるたびに問題がシャッフルされるので、何度でも練習になります。まちがえた問題には、下に解説と出典(ルールブックの何条か)が表示されます。'},
+      {icon: ballIconSVG('#fff',20), title:'クイズに挑戦しよう', body:'「せんしゅ編」「オフィシャル編」からモードをえらんで、4択クイズに挑戦できます。1回10問、解くたびに問題がシャッフルされるので、何度でも練習になります。まちがえた問題には、下に解説と出典(ルールブックの何条か)が表示されます。'},
       {icon: courtIconSVG('#fff',20), title:'用語集(じてん)で調べよう', body:'クイズに出てくる言葉やルールを、あとからゆっくり読み返せる用語集です。カテゴリーごとに絞り込んで見ることもできます。'},
       {icon: tacticsIconSVG('#fff',20), title:'自主トレを記録しよう', body:'練習したメニューを記録できます。決まったメニューから選ぶほか、自由に入力することもでき、同じ内容を3回入力すると自動でえらべる項目に追加されます。「オリジナルの自主トレメニュー」機能を使うと、複数のチェック項目からなる自分だけの練習メニューも作れます。記録した日はカレンダーにスタンプがつきます。'},
       {icon: pencilIconSVG('#fff',20), title:'バスケノートでメモしよう', body:'気づいたことや、コーチに言われたことを自由にメモしておけるノート機能です。時系列で見返すことができます。'},
@@ -3909,10 +3915,12 @@
     });
   };
   window.handleAskAIKeydown = function(event){
-    if(event.key === 'Enter' && !event.shiftKey){
+    if(event.key === 'Enter' && event.shiftKey){
       event.preventDefault();
       window.submitAskAI();
     }
+    // plain Enter (no Shift) inserts a normal newline, so it never fires an
+    // accidental submit while the IME is finishing a kana-to-kanji conversion
   };
   window.autoResizeAskAI = function(el){
     el.style.height = 'auto';
@@ -3935,7 +3943,7 @@
         '<div class="ai-log" id="ai-log">'+log+loadingRow+'</div>' +
         (state.askAIError ? '<p class="ai-error">'+escapeHtml(state.askAIError)+'</p>' : '') +
         '<div class="ai-input-row">' +
-          '<textarea class="text-input ai-textarea" id="ai-textarea" rows="1" placeholder="れい: リバウンドが上手になるには？(Shift+Enterで改行)" oninput="updateAskAIQuestion(this.value); autoResizeAskAI(this);" onkeydown="handleAskAIKeydown(event)">'+escapeHtml(state.askAIQuestion)+'</textarea>' +
+          '<textarea class="text-input ai-textarea" id="ai-textarea" rows="1" placeholder="れい: リバウンドが上手になるには？(Shift+Enterで送信)" oninput="updateAskAIQuestion(this.value); autoResizeAskAI(this);" onkeydown="handleAskAIKeydown(event)">'+escapeHtml(state.askAIQuestion)+'</textarea>' +
           '<button class="btn ai-send-btn" onclick="submitAskAI()" '+(state.askAILoading?'disabled':'')+'>'+askIconSVG('#fff',18)+'</button>' +
         '</div>' +
         '<p class="meta-line ai-disclaimer">AIの答えです。まちがっていることもあるので、大事なルールは審判やコーチにも確認してね。</p>' +
