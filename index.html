@@ -675,10 +675,12 @@
     30%{transform:translateY(-4px);opacity:1;}
   }
   .ai-error{color:var(--bad);font-size:0.85rem;}
-  .ai-input-row{display:flex;flex-wrap:nowrap;gap:8px;align-items:center;border-top:2px solid var(--line);padding-top:10px;}
+  .ai-input-row{display:flex;flex-wrap:nowrap;gap:8px;align-items:flex-end;border-top:2px solid var(--line);padding-top:10px;}
   .ai-input-row .text-input{flex:1 1 auto;min-width:0;}
+  .ai-textarea{resize:none;overflow-y:auto;max-height:140px;min-height:44px;line-height:1.4;font-family:inherit;}
   .ai-send-btn{flex:none;width:44px;height:44px;padding:0;border-radius:50%;}
   .ai-disclaimer{opacity:0.75;}
+  .ai-source{font-size:0.72rem;color:var(--ink-soft);margin-top:4px;opacity:0.85;}
 
   /* ---------- start screen ---------- */
   .start-hero{text-align:center;padding:18px 6px 6px;}
@@ -776,9 +778,16 @@
 (function(){
   "use strict";
 
-  var APP_VERSION = "1.35";
+  var APP_VERSION = "1.36";
 
   var CHANGELOG = [
+    {version:'1.36', date:'2026-09-29', sections:[
+      {title:'新機能', icon:'star', items:[
+        '「バスケはかせに聞く」を会話の文脈を覚えたまま続けられるチャットに改良(直近8ターンまで)',
+        '入力欄をShift+Enterで改行・Enterで送信という一般的なチャットの操作方法に変更',
+        '回答がJBA公式ルールの条文にもとづく場合、回答の下に出典を表示するようにした'
+      ]}
+    ]},
     {version:'1.35', date:'2026-09-29', sections:[
       {title:'新機能', icon:'star', items:[
         '満点達成や自主トレの連続記録(3・7・14・30日)の節目で、記念のシェアカード画像を作れるようになった。画像の保存・LINE等への共有(対応端末のみ)ができる。ランキングや他人との比較機能ではなく、あくまで個人の記録を残すための機能'
@@ -3844,10 +3853,11 @@
     state.askAIError = '';
     state.askAIQuestion = '';
     render();
+    var historyPayload = state.askAIHistory.slice(-8).map(function(e){ return {q: e.q, a: e.a}; });
     fetch(AI_WORKER_URL, {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({question: q})
+      body: JSON.stringify({question: q, history: historyPayload})
     }).then(function(res){
       return res.json().then(function(data){ return {ok: res.ok, data: data}; });
     }).then(function(result){
@@ -3858,7 +3868,11 @@
         return;
       }
       var history = state.askAIHistory.slice();
-      history.push({q: q, a: result.data.answer});
+      history.push({
+        q: q,
+        a: result.data.answer,
+        sources: Array.isArray(result.data.sources) ? result.data.sources : []
+      });
       if(history.length > 20) history = history.slice(history.length - 20);
       state.askAIHistory = history;
       render();
@@ -3868,12 +3882,24 @@
       render();
     });
   };
+  window.handleAskAIKeydown = function(event){
+    if(event.key === 'Enter' && !event.shiftKey){
+      event.preventDefault();
+      window.submitAskAI();
+    }
+  };
+  window.autoResizeAskAI = function(el){
+    el.style.height = 'auto';
+    el.style.height = Math.min(el.scrollHeight, 140) + 'px';
+  };
 
   function renderAskAI(){
     var log = state.askAIHistory.map(function(entry){
+      var sourcesHtml = (entry.sources && entry.sources.length) ?
+        '<div class="ai-source">出典: '+entry.sources.map(function(s){ return escapeHtml(s); }).join('、')+'</div>' : '';
       return '<div class="ai-turn">' +
         '<div class="ai-row ai-row-q"><div class="ai-bubble ai-q">'+escapeHtml(entry.q)+'</div></div>' +
-        '<div class="ai-row ai-row-a"><span class="ai-avatar">'+ballIconSVG('#fff',14)+'</span><div class="ai-bubble ai-a">'+escapeHtml(entry.a).replace(/\n/g,'<br>')+'</div></div>' +
+        '<div class="ai-row ai-row-a"><span class="ai-avatar">'+ballIconSVG('#fff',14)+'</span><div><div class="ai-bubble ai-a">'+escapeHtml(entry.a).replace(/\n/g,'<br>')+'</div>'+sourcesHtml+'</div></div>' +
       '</div>';
     }).join('') || (state.askAILoading ? '' : '<p class="meta-line ai-empty">バスケのルールや練習のこと、なんでもきいてみよう!</p>');
     var loadingRow = state.askAILoading ?
@@ -3883,7 +3909,7 @@
         '<div class="ai-log" id="ai-log">'+log+loadingRow+'</div>' +
         (state.askAIError ? '<p class="ai-error">'+escapeHtml(state.askAIError)+'</p>' : '') +
         '<div class="ai-input-row">' +
-          '<input class="text-input" placeholder="れい: リバウンドが上手になるには？" value="'+escapeHtml(state.askAIQuestion)+'" oninput="updateAskAIQuestion(this.value)" onkeydown="if(event.key===\'Enter\'){submitAskAI();}">' +
+          '<textarea class="text-input ai-textarea" id="ai-textarea" rows="1" placeholder="れい: リバウンドが上手になるには？(Shift+Enterで改行)" oninput="updateAskAIQuestion(this.value); autoResizeAskAI(this);" onkeydown="handleAskAIKeydown(event)">'+escapeHtml(state.askAIQuestion)+'</textarea>' +
           '<button class="btn ai-send-btn" onclick="submitAskAI()" '+(state.askAILoading?'disabled':'')+'>'+askIconSVG('#fff',18)+'</button>' +
         '</div>' +
         '<p class="meta-line ai-disclaimer">AIの答えです。まちがっていることもあるので、大事なルールは審判やコーチにも確認してね。</p>' +
