@@ -772,9 +772,14 @@
 (function(){
   "use strict";
 
-  var APP_VERSION = "1.32";
+  var APP_VERSION = "1.33";
 
   var CHANGELOG = [
+    {version:'1.33', date:'2026-09-29', sections:[
+      {title:'修正', icon:'up', items:[
+        '関連商品カード(作戦盤・マーカーコーン・ビブス・ジャンプロープ)の商品情報を実際のものに更新'
+      ]}
+    ]},
     {version:'1.32', date:'2026-09-28', sections:[
       {title:'新機能', icon:'star', items:[
         '問題数をせんしゅ編100問・オフィシャル編50問に増量(JBA公式規則にもとづく新しい問題を50問追加)'
@@ -1001,10 +1006,10 @@
     ball5:   {name:'molten JB5000 5号検定球', price:'¥4,180', image:null, url:'https://hb.afl.rakuten.co.jp/ichiba/57fd1157.641e56e9.57fd1158.57809487/?pc=https%3A%2F%2Fitem.rakuten.co.jp%2Fikurun%2F182202%2F&link_type=hybrid_url&ut=eyJwYWdlIjoiaXRlbSIsInR5cGUiOiJoeWJyaWRfdXJsIiwic2l6ZSI6IjI0MHgyNDAiLCJuYW0iOjEsIm5hbXAiOiJyaWdodCIsImNvbSI6MSwiY29tcCI6ImRvd24iLCJwcmljZSI6MSwiYm9yIjoxLCJjb2wiOjEsImJidG4iOjEsInByb2QiOjAsImFtcCI6ZmFsc2V9'},
     whistle: {name:'Kodrily バスケ審判用ホイッスル', price:'¥1,370', image:null, url:'https://hb.afl.rakuten.co.jp/ichiba/57fd1778.5b01ac02.57fd1779.aeb2ba9f/?pc=https%3A%2F%2Fitem.rakuten.co.jp%2Fprimeplus%2F20250620104633_39%2F&link_type=hybrid_url&ut=eyJwYWdlIjoiaXRlbSIsInR5cGUiOiJoeWJyaWRfdXJsIiwic2l6ZSI6IjI0MHgyNDAiLCJuYW0iOjEsIm5hbXAiOiJyaWdodCIsImNvbSI6MSwiY29tcCI6ImRvd24iLCJwcmljZSI6MSwiYm9yIjoxLCJjb2wiOjEsImJidG4iOjEsInByb2QiOjAsImFtcCI6ZmFsc2V9'},
     timer:   {name:'シチズン ストップウオッチ055', price:'¥3,267', image:null, url:'https://hb.afl.rakuten.co.jp/ichiba/57fd1832.fb20b8c3.57fd1833.bbd9a148/?pc=https%3A%2F%2Fitem.rakuten.co.jp%2Frcmdin%2Ft4-4405960%2F&link_type=hybrid_url&ut=eyJwYWdlIjoiaXRlbSIsInR5cGUiOiJoeWJyaWRfdXJsIiwic2l6ZSI6IjI0MHgyNDAiLCJuYW0iOjEsIm5hbXAiOiJyaWdodCIsImNvbSI6MSwiY29tcCI6ImRvd24iLCJwcmljZSI6MSwiYm9yIjoxLCJjb2wiOjEsImJidG4iOjEsInByb2QiOjAsImFtcCI6ZmFsc2V9'},
-    tacticsboard:{name:'バスケ作戦盤', price:null, image:null, url:'https://search.rakuten.co.jp/search/mall/%E3%83%90%E3%82%B9%E3%82%B1%E3%83%83%E3%83%88+%E4%BD%9C%E6%88%A6%E7%9B%A4/'},
-    cone:        {name:'トレーニング用マーカーコーン', price:null, image:null, url:'https://search.rakuten.co.jp/search/mall/%E3%83%9E%E3%83%BC%E3%82%AB%E3%83%BC%E3%82%B3%E3%83%BC%E3%83%B3+%E3%83%88%E3%83%AC%E3%83%BC%E3%83%8B%E3%83%B3%E3%82%B0/'},
-    bib:         {name:'ビブス(チーム練習用)', price:null, image:null, url:'https://search.rakuten.co.jp/search/mall/%E3%83%93%E3%83%96%E3%82%B9+%E3%83%90%E3%82%B9%E3%82%B1%E3%83%83%E3%83%88/'},
-    jumprope:    {name:'トレーニング用ジャンプロープ', price:null, image:null, url:'https://search.rakuten.co.jp/search/mall/%E3%82%B8%E3%83%A3%E3%83%B3%E3%83%97%E3%83%AD%E3%83%BC%E3%83%97+%E3%83%88%E3%83%AC%E3%83%BC%E3%83%8B%E3%83%B3%E3%82%B0/'}
+    tacticsboard:{name:'バスケ作戦板(折りたたみ式・マグネット/マーカー/ストラップ付き)', price:'¥1,480', image:null, url:'https://hb.afl.rakuten.co.jp/ichiba/58025c86.c7b912f7.58025c87.1fb6eae8/?pc=https%3A%2F%2Fitem.rakuten.co.jp%2Fsiba-98%2Fbo-bk%2F&link_type=hybrid_url&ut=eyJwYWdlIjoiaXRlbSIsInR5cGUiOiJoeWJyaWRfdXJsIiwic2l6ZSI6IjI0MHgyNDAiLCJuYW0iOjEsIm5hbXAiOiJyaWdodCIsImNvbSI6MSwiY29tcCI6ImRvd24iLCJwcmljZSI6MSwiYm9yIjoxLCJjb2wiOjEsImJidG4iOjEsInByb2QiOjAsImFtcCI6ZmFsc2V9'},
+    cone:        {name:'マーカーコーン(5色・収納袋/専用スタンド付き)', price:'¥1,020〜', image:null, url:'https://hb.afl.rakuten.co.jp/ichiba/58025db2.42b2193d.58025db3.7eb8aeef/?pc=https%3A%2F%2Fitem.rakuten.co.jp%2Fhappiness-life-japan%2Fbp-7l3u-vdt7%2F&link_type=hybrid_url&ut=eyJwYWdlIjoiaXRlbSIsInR5cGUiOiJoeWJyaWRfdXJsIiwic2l6ZSI6IjI0MHgyNDAiLCJuYW0iOjEsIm5hbXAiOiJyaWdodCIsImNvbSI6MSwiY29tcCI6ImRvd24iLCJwcmljZSI6MSwiYm9yIjoxLCJjb2wiOjEsImJidG4iOjEsInByb2QiOjAsImFtcCI6ZmFsc2V9'},
+    bib:         {name:'ゼット 練習ベスト ビブス(番号1〜20・1枚)', price:'¥1,526', image:null, url:'https://hb.afl.rakuten.co.jp/ichiba/58025f27.9fc37803.58025f28.2395e678/?pc=https%3A%2F%2Fitem.rakuten.co.jp%2Fmyr2026%2Fgr-e9rr267f0c%2F&link_type=hybrid_url&ut=eyJwYWdlIjoiaXRlbSIsInR5cGUiOiJoeWJyaWRfdXJsIiwic2l6ZSI6IjI0MHgyNDAiLCJuYW0iOjEsIm5hbXAiOiJyaWdodCIsImNvbSI6MSwiY29tcCI6ImRvd24iLCJwcmljZSI6MSwiYm9yIjoxLCJjb2wiOjEsImJidG4iOjEsInByb2QiOjAsImFtcCI6ZmFsc2V9'},
+    jumprope:    {name:'トレーニング用ジャンプロープ(長さ調整可能)', price:'¥850', image:null, url:'https://hb.afl.rakuten.co.jp/ichiba/58026023.6935b49b.58026024.3245e2f5/?pc=https%3A%2F%2Fitem.rakuten.co.jp%2Fgardenexterior%2Fyz-nwtb-001%2F&link_type=hybrid_url&ut=eyJwYWdlIjoiaXRlbSIsInR5cGUiOiJoeWJyaWRfdXJsIiwic2l6ZSI6IjI0MHgyNDAiLCJuYW0iOjEsIm5hbXAiOiJyaWdodCIsImNvbSI6MSwiY29tcCI6ImRvd24iLCJwcmljZSI6MSwiYm9yIjoxLCJjb2wiOjEsImJidG4iOjEsInByb2QiOjAsImFtcCI6ZmFsc2V9'}
   };
 
   function tutorialSteps(){
