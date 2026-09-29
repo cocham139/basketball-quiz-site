@@ -1050,6 +1050,11 @@
   };
   var JISHU_TYPES = ['ラダー','フリースロー(シュート練)','マイカンドリル','フットワーク','ハンドリング'];
   var STREAK_MILESTONES = [3, 7, 14, 30];
+  var CAP_DOWNLOADS = null;
+  function initDownloadsCapability(){
+    if(!(window.claude && typeof window.claude.use === 'function')) return;
+    window.claude.use('downloads').then(function(d){ CAP_DOWNLOADS = d; }).catch(function(){});
+  }
 
   function dateKey(d){ return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate(); }
 
@@ -3611,15 +3616,24 @@
   };
   window.downloadShareCard = function(){
     var canvas = document.getElementById('share-canvas');
-    if(!canvas || typeof canvas.toDataURL !== 'function') return;
-    try{
-      var a = document.createElement('a');
-      a.href = canvas.toDataURL('image/png');
-      a.download = 'basketball-hakase-card.png';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-    }catch(e){}
+    if(!canvas || typeof canvas.toBlob !== 'function') return;
+    canvas.toBlob(function(blob){
+      if(!blob) return;
+      if(CAP_DOWNLOADS){
+        CAP_DOWNLOADS.save({filename:'basketball-hakase-card.png', data: blob}).catch(function(){});
+        return;
+      }
+      try{
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement('a');
+        a.href = url;
+        a.download = 'basketball-hakase-card.png';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
+      }catch(e){}
+    }, 'image/png');
   };
   window.shareShareCard = function(){
     var canvas = document.getElementById('share-canvas');
@@ -4127,6 +4141,7 @@
 
   initLocalProfile();
   render();
+  initDownloadsCapability();
 
   setTimeout(checkForUpdate, 3000);
   setInterval(checkForUpdate, 10 * 60 * 1000);
