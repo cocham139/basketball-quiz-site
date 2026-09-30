@@ -521,11 +521,27 @@
     padding:10px 14px;
   }
   .note-text{font-size:0.92rem;color:var(--ink);line-height:1.55;white-space:pre-wrap;word-break:break-word;}
-  .note-meta{display:flex;justify-content:space-between;align-items:center;margin-top:6px;font-size:0.72rem;color:var(--ink-soft);}
+  .note-bubble.resolved{opacity:0.6;}
+  .note-bubble.resolved .note-text{text-decoration:line-through;}
+  .note-reactions-shown{font-size:1rem;margin-top:4px;letter-spacing:2px;}
+  .note-stamp-row{display:flex;gap:2px;margin-top:6px;}
+  .note-stamp{
+    border:none;background:none;font-size:0.95rem;line-height:1;padding:3px 5px;border-radius:8px;
+    cursor:pointer;opacity:0.4;filter:grayscale(1);
+  }
+  .note-stamp.active{opacity:1;filter:none;background:var(--surface);}
+  .note-meta{display:flex;justify-content:space-between;align-items:center;margin-top:6px;font-size:0.72rem;color:var(--ink-soft);gap:8px;}
+  .note-meta-actions{display:flex;align-items:center;gap:8px;flex:none;}
+  .note-resolve{
+    border:none;background:none;color:var(--ink-soft);font-size:0.72rem;text-decoration:underline;
+    cursor:pointer;padding:2px 4px;white-space:nowrap;
+  }
+  .note-resolve.active{color:var(--good);text-decoration:none;font-weight:700;}
   .note-del{
     border:none;background:none;color:var(--ink-soft);font-size:1rem;line-height:1;cursor:pointer;padding:2px 6px;
   }
   .note-del:hover{color:var(--bad);}
+  .notebook-tabs{margin-bottom:2px;}
   .notebook-input-row{display:flex;flex-direction:column;gap:10px;}
   .notebook-textarea{min-height:72px;resize:vertical;font-family:var(--font-body);}
 
@@ -778,9 +794,15 @@
 (function(){
   "use strict";
 
-  var APP_VERSION = "1.38";
+  var APP_VERSION = "1.39";
 
   var CHANGELOG = [
+    {version:'1.39', date:'2026-09-30', sections:[
+      {title:'新機能', icon:'star', items:[
+        'バスケノートにスタンプ(🏀⭐💪😂❤️)機能を追加。メモごとに好きなスタンプをつけられるようになった',
+        'バスケノートのメモに「かいけつにする」機能を追加。「すべて/みちかいけつ/かいけつずみ」で絞り込んで見られるようになった'
+      ]}
+    ]},
     {version:'1.38', date:'2026-09-29', sections:[
       {title:'修正', icon:'up', items:[
         '「バスケはかせに聞く」の送信キーをShift+Enter=送信・Enter=改行に変更(日本語入力の変換確定でEnterを押しても誤って送信されないように)',
@@ -1070,6 +1092,7 @@
     official:{label:"オフィシャル編", cats:['scorer','timer']}
   };
   var JISHU_TYPES = ['ラダー','フリースロー(シュート練)','マイカンドリル','フットワーク','ハンドリング'];
+  var NOTE_STAMPS = ['🏀','⭐','💪','😂','❤️'];
   var STREAK_MILESTONES = [3, 7, 14, 30];
   var STREAK_MILESTONE_INTERVAL = 30;
 
@@ -2511,6 +2534,7 @@
     importText:'',
     importError:'',
     noteDraft:'',
+    notebookFilter:'all',
     scoreboard:{
       a:{name:'チームA', score:0, fouls:0},
       b:{name:'チームB', score:0, fouls:0}
@@ -3821,14 +3845,15 @@
   }
 
   /* ---------------- バスケノート ---------------- */
-  window.showNotebook = function(){ stopTickers(); state.screen='notebook'; state.noteDraft=''; render(); };
+  window.showNotebook = function(){ stopTickers(); state.screen='notebook'; state.noteDraft=''; state.notebookFilter='all'; render(); };
   window.updateNoteDraft = function(v){ state.noteDraft = v; };
+  window.setNotebookFilter = function(f){ state.notebookFilter = f; render(); };
   window.addNote = function(){
     if(!state.profile){ window.showProfileGate(); return; }
     var text = (state.noteDraft||'').trim();
     if(!text) return;
     var notes = state.profile.notes.slice();
-    notes.push({id: genId(), text: text, at: new Date().toISOString()});
+    notes.push({id: genId(), text: text, at: new Date().toISOString(), reactions: {}, resolved: false});
     if(notes.length > 200) notes = notes.slice(notes.length - 200);
     state.profile.notes = notes;
     state.noteDraft = '';
@@ -3838,6 +3863,24 @@
   window.deleteNote = function(id){
     if(!state.profile) return;
     state.profile.notes = state.profile.notes.filter(function(n){ return n.id !== id; });
+    render();
+    persistProfile();
+  };
+  window.toggleNoteReaction = function(id, emoji){
+    if(!state.profile) return;
+    var note = state.profile.notes.filter(function(n){ return n.id === id; })[0];
+    if(!note) return;
+    var reactions = note.reactions || {};
+    if(reactions[emoji]) delete reactions[emoji]; else reactions[emoji] = true;
+    note.reactions = reactions;
+    render();
+    persistProfile();
+  };
+  window.toggleNoteResolved = function(id){
+    if(!state.profile) return;
+    var note = state.profile.notes.filter(function(n){ return n.id === id; })[0];
+    if(!note) return;
+    note.resolved = !note.resolved;
     render();
     persistProfile();
   };
@@ -3854,14 +3897,40 @@
         '<div class="card"><p class="meta-line">ノートを使うにはプロフィールが必要だよ。 <button class="link-btn" onclick="showProfileGate()">作る/えらぶ</button></p></div>';
     }
     var notes = state.profile.notes || [];
-    var bubbles = notes.slice().reverse().map(function(n){
-      return '<div class="note-bubble">' +
+    var filter = state.notebookFilter || 'all';
+    var shown = notes.filter(function(n){
+      if(filter === 'open') return !n.resolved;
+      if(filter === 'resolved') return !!n.resolved;
+      return true;
+    });
+    var bubbles = shown.slice().reverse().map(function(n){
+      var reactions = n.reactions || {};
+      var activeEmojis = NOTE_STAMPS.filter(function(e){ return reactions[e]; });
+      var stampRow = NOTE_STAMPS.map(function(e){
+        var active = !!reactions[e];
+        return '<button class="note-stamp'+(active?' active':'')+'" onclick="toggleNoteReaction(\''+n.id+'\', \''+e+'\')" aria-label="スタンプ">'+e+'</button>';
+      }).join('');
+      return '<div class="note-bubble'+(n.resolved?' resolved':'')+'">' +
         '<div class="note-text">'+escapeHtml(n.text).replace(/\n/g,'<br>')+'</div>' +
-        '<div class="note-meta"><span>'+formatNoteTime(n.at)+'</span><button class="note-del" onclick="deleteNote(\''+n.id+'\')" aria-label="削除">×</button></div>' +
+        (activeEmojis.length ? '<div class="note-reactions-shown">'+activeEmojis.join(' ')+'</div>' : '') +
+        '<div class="note-stamp-row">'+stampRow+'</div>' +
+        '<div class="note-meta">' +
+          '<span>'+formatNoteTime(n.at)+'</span>' +
+          '<div class="note-meta-actions">' +
+            '<button class="note-resolve'+(n.resolved?' active':'')+'" onclick="toggleNoteResolved(\''+n.id+'\')">'+(n.resolved?'✓ かいけつ!':'かいけつにする')+'</button>' +
+            '<button class="note-del" onclick="deleteNote(\''+n.id+'\')" aria-label="削除">×</button>' +
+          '</div>' +
+        '</div>' +
       '</div>';
-    }).join('') || '<p class="meta-line">まだメモがないよ。きょう気づいたこと、コーチに言われたことを書いてみよう。</p>';
+    }).join('') || '<p class="meta-line">'+(filter==='all' ? 'まだメモがないよ。きょう気づいたこと、コーチに言われたことを書いてみよう。' : 'この絞り込みに合うメモはまだないよ。')+'</p>';
+    var tabs = '<div class="filter-tabs notebook-tabs">' +
+      '<button class="tab'+(filter==='all'?' active':'')+'" onclick="setNotebookFilter(\'all\')">すべて</button>' +
+      '<button class="tab'+(filter==='open'?' active':'')+'" onclick="setNotebookFilter(\'open\')">みちかいけつ</button>' +
+      '<button class="tab'+(filter==='resolved'?' active':'')+'" onclick="setNotebookFilter(\'resolved\')">かいけつずみ</button>' +
+    '</div>';
     return '<div class="scoreboard"><div class="title">'+pencilIconSVG('currentColor',18)+' バスケノート</div><button class="back-btn" onclick="backToStart()">← もどる</button></div>' +
       '<div class="card notebook-card">' +
+        tabs +
         '<div class="notebook-list">'+bubbles+'</div>' +
         '<div class="notebook-input-row">' +
           '<textarea class="text-input notebook-textarea" placeholder="きょうの気づき、練習メモなど…" oninput="updateNoteDraft(this.value)">'+escapeHtml(state.noteDraft)+'</textarea>' +
