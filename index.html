@@ -485,6 +485,7 @@
     background:var(--surface-2);border-radius:10px;font-size:0.86rem;color:var(--ink);
   }
   .log-date{color:var(--ink-soft);font-variant-numeric:tabular-nums;}
+  .log-count{color:var(--ink-soft);font-weight:700;}
   .check-list{display:flex;flex-direction:column;gap:10px;margin-top:14px;}
   .check-row{
     display:flex;align-items:center;gap:12px;padding:14px 16px;border-radius:var(--radius-md);
@@ -794,9 +795,16 @@
 (function(){
   "use strict";
 
-  var APP_VERSION = "1.39";
+  var APP_VERSION = "1.40";
 
   var CHANGELOG = [
+    {version:'1.40', date:'2026-10-02', sections:[
+      {title:'改善', icon:'up', items:[
+        '自主トレの記録が古いものから消えてしまう(直近30件までしか残らない)問題を修正。これからの記録はすべて残るようになった',
+        '自主トレ画面に「総トータル/月トータル/週トータル」の切り替えを追加(はじめは総トータル)。回数・やった日数・しゅもくべつの回数・新しい順の一覧が見られる。月・週は前後にたどって過去の記録まで見られる',
+        '※すでに30件を超えて消えてしまった過去の記録は、残念ながら復元できません'
+      ]}
+    ]},
     {version:'1.39', date:'2026-09-30', sections:[
       {title:'新機能', icon:'star', items:[
         'バスケノートにスタンプ(🏀⭐💪😂❤️)機能を追加。メモごとに好きなスタンプをつけられるようになった',
@@ -1108,6 +1116,15 @@
   }
 
   function dateKey(d){ return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate(); }
+
+  var JISHU_LOG_MAX = 5000;
+  function pushJishuLog(profile, type){
+    var log = (profile.jishuLog || []).slice();
+    log.push({type: type, at: new Date().toISOString()});
+    if(log.length > JISHU_LOG_MAX) log = log.slice(log.length - JISHU_LOG_MAX);
+    profile.jishuLog = log;
+    return log;
+  }
 
   function updateJishuStreak(profile){
     var today = new Date();
@@ -2542,6 +2559,9 @@
     stopwatch:{running:false, elapsedMs:0, startedAt:0},
     timer:{running:false, totalSec:180, remainingSec:180, finished:false},
     celebrate:false,
+    jishuView:'total',
+    jishuWeekOffset:0,
+    jishuListLimit:30,
     calYear:(new Date()).getFullYear(),
     calMonth:(new Date()).getMonth(),
     askAIQuestion:'',
@@ -3252,7 +3272,7 @@
     cl[key] = !cl[key];
     var allDone = drill.items.every(function(it){ return cl[it.key]; });
     if(allDone){
-      state.profile.jishuLog.push({type: drill.name, at: new Date().toISOString()});
+      pushJishuLog(state.profile, drill.name);
       drill.items.forEach(function(it){ cl[it.key] = false; });
       celebrateOrShareStreak();
     }
@@ -3275,17 +3295,18 @@
     return list;
   }
 
-  window.showJishu = function(){ state.screen='jishu'; state.jishuCustomText=''; render(); };
+  window.showJishu = function(){
+    state.screen='jishu'; state.jishuCustomText='';
+    state.jishuView='total'; state.jishuWeekOffset=0; state.jishuListLimit=30;
+    render();
+  };
   window.setJishuPick = function(v){ state.jishuPick = v; render(); };
   window.updateJishuCustom = function(v){ state.jishuCustomText = v; };
   window.logJishuDone = function(){
     if(!state.profile){ window.showProfileGate(); return; }
     var custom = (state.jishuCustomText||'').trim();
     var type = custom || state.jishuPick;
-    var log = state.profile.jishuLog.slice();
-    log.push({type: type, at: new Date().toISOString()});
-    if(log.length > 30) log = log.slice(log.length - 30);
-    state.profile.jishuLog = log;
+    var log = pushJishuLog(state.profile, type);
     state.jishuCustomText = '';
     if(custom && knownJishuTypes(state.profile).indexOf(custom) === -1){
       var count = log.filter(function(e){ return e.type === custom; }).length;
@@ -3384,10 +3405,10 @@
     persistProfile();
   };
 
-  function logRows(log){
-    return log.slice().reverse().slice(0,10).map(function(e){
+  function logRows(log, limit, withYear){
+    return log.slice().reverse().slice(0, limit || 10).map(function(e){
       var d = new Date(e.at);
-      var ds = isNaN(d) ? '' : (d.getMonth()+1)+'/'+d.getDate();
+      var ds = isNaN(d) ? '' : (withYear ? d.getFullYear()+'/' : '')+(d.getMonth()+1)+'/'+d.getDate();
       return '<div class="log-row"><span>'+escapeHtml(e.type)+'</span><span class="log-date">'+ds+'</span></div>';
     }).join('') || '<p class="meta-line">まだ記録がありません。</p>';
   }
@@ -3501,8 +3522,8 @@
         (!state.profile ? '<p class="meta-line">記録するにはプロフィールが必要だよ。 <button class="link-btn" onclick="showProfileGate()">作る/えらぶ</button></p>' : '') +
         '<h3 class="section-title">カレンダー</h3>' +
         renderTrainingCalendar(state.profile ? state.profile.jishuLog : []) +
-        '<h3 class="section-title">さいきんの記録</h3>' +
-        '<div class="log-list">'+(state.profile ? logRows(state.profile.jishuLog) : '')+'</div>' +
+        '<h3 class="section-title">きろくのトータル</h3>' +
+        (state.profile ? renderJishuTotals(state.profile.jishuLog) : '') +
       '</div>' +
       renderCelebration();
   }
@@ -3578,6 +3599,97 @@
     state.calMonth = now.getMonth();
     render();
   };
+
+  /* ---------------- 自主トレ: 総・月・週トータル ---------------- */
+  var WEEKDAY_JA = ['日','月','火','水','木','金','土'];
+
+  function jishuWeekRange(offset){
+    var now = new Date();
+    var start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - now.getDay() + offset * 7);
+    var end = new Date(start.getFullYear(), start.getMonth(), start.getDate() + 7);
+    return {start: start, end: end};
+  }
+  function jishuMonthRange(y, m){
+    return {start: new Date(y, m, 1), end: new Date(y, m + 1, 1)};
+  }
+  function filterLogByRange(log, range){
+    return (log || []).filter(function(e){
+      var d = new Date(e.at);
+      return !isNaN(d) && d >= range.start && d < range.end;
+    });
+  }
+  function summarizeJishuLog(entries){
+    var days = {}, byType = {};
+    entries.forEach(function(e){
+      var d = new Date(e.at);
+      if(!isNaN(d)) days[dateKey(d)] = true;
+      byType[e.type] = (byType[e.type] || 0) + 1;
+    });
+    var list = Object.keys(byType).map(function(t){ return {type: t, count: byType[t]}; })
+      .sort(function(a, b){ return b.count - a.count; });
+    return {count: entries.length, days: Object.keys(days).length, byType: list};
+  }
+  function jishuScope(log, view){
+    if(view === 'month'){
+      return {entries: filterLogByRange(log, jishuMonthRange(state.calYear, state.calMonth)),
+              label: state.calYear+'年'+(state.calMonth+1)+'月'};
+    }
+    if(view === 'week'){
+      var r = jishuWeekRange(state.jishuWeekOffset || 0);
+      var last = new Date(r.end.getFullYear(), r.end.getMonth(), r.end.getDate() - 1);
+      return {entries: filterLogByRange(log, r),
+              label: (r.start.getMonth()+1)+'/'+r.start.getDate()+'('+WEEKDAY_JA[r.start.getDay()]+') 〜 '+(last.getMonth()+1)+'/'+last.getDate()+'('+WEEKDAY_JA[last.getDay()]+')'};
+    }
+    return {entries: (log || []).slice(), label: 'これまでのぜんぶ'};
+  }
+
+  window.setJishuView = function(v){ state.jishuView = v; state.jishuListLimit = 30; render(); };
+  window.jishuShowMore = function(){ state.jishuListLimit += 50; render(); };
+  window.jishuWeekMove = function(delta){ state.jishuWeekOffset = (state.jishuWeekOffset || 0) + delta; state.jishuListLimit = 30; render(); };
+  window.jishuWeekThis = function(){ state.jishuWeekOffset = 0; state.jishuListLimit = 30; render(); };
+  window.jishuMonthMove = function(delta){
+    state.jishuListLimit = 30;
+    if(delta < 0) window.calPrevMonth(); else window.calNextMonth();
+  };
+  window.jishuMonthThis = function(){ state.jishuListLimit = 30; window.calThisMonth(); };
+
+  function renderJishuTotals(log){
+    var view = state.jishuView || 'total';
+    var scope = jishuScope(log, view);
+    var summary = summarizeJishuLog(scope.entries);
+    var tabs = [['total','総トータル'],['month','月トータル'],['week','週トータル']].map(function(t){
+      return '<button class="tab'+(view===t[0]?' active':'')+'" onclick="setJishuView(\''+t[0]+'\')">'+t[1]+'</button>';
+    }).join('');
+    var nav = '';
+    if(view === 'month'){
+      nav = '<div class="cal-header">' +
+        '<button class="cal-nav" onclick="jishuMonthMove(-1)" aria-label="前の月">‹</button>' +
+        '<button class="cal-title" onclick="jishuMonthThis()">'+scope.label+'</button>' +
+        '<button class="cal-nav" onclick="jishuMonthMove(1)" aria-label="次の月">›</button></div>';
+    } else if(view === 'week'){
+      nav = '<div class="cal-header">' +
+        '<button class="cal-nav" onclick="jishuWeekMove(-1)" aria-label="前の週">‹</button>' +
+        '<button class="cal-title" onclick="jishuWeekThis()">'+scope.label+'</button>' +
+        '<button class="cal-nav" onclick="jishuWeekMove(1)" aria-label="次の週">›</button></div>';
+    } else {
+      nav = '<p class="meta-line" style="text-align:center">'+scope.label+'</p>';
+    }
+    var stats = '<div class="stat-row">' +
+      '<div class="stat-box"><div class="stat-num">'+summary.count+'</div><div class="stat-label">きろく回数</div></div>' +
+      '<div class="stat-box"><div class="stat-num">'+summary.days+'</div><div class="stat-label">やった日数</div></div>' +
+    '</div>';
+    var breakdown = summary.byType.length ?
+      '<h3 class="section-title">しゅもくべつ</h3><div class="log-list">' +
+        summary.byType.map(function(t){
+          return '<div class="log-row"><span>'+escapeHtml(t.type)+'</span><span class="log-count">'+t.count+'回</span></div>';
+        }).join('') + '</div>' : '';
+    var limit = state.jishuListLimit || 30;
+    var more = scope.entries.length > limit ?
+      '<div class="start-actions"><button class="btn btn-ghost small-btn" onclick="jishuShowMore()">もっと見る(のこり'+(scope.entries.length - limit)+'件)</button></div>' : '';
+    return '<div class="filter-tabs">'+tabs+'</div>' + nav + stats + breakdown +
+      '<h3 class="section-title">きろく一覧(新しい順)</h3>' +
+      '<div class="log-list">'+logRows(scope.entries, limit, true)+'</div>' + more;
+  }
 
   function renderTrainingCalendar(jishuLog){
     var y = state.calYear, m = state.calMonth;
