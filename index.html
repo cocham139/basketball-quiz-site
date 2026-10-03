@@ -707,6 +707,20 @@
   .ai-send-btn{flex:none;width:44px;height:44px;padding:0;border-radius:50%;}
   .ai-disclaimer{opacity:0.75;}
   .ai-source{font-size:0.72rem;color:var(--ink-soft);margin-top:4px;opacity:0.85;}
+  .rev-item{background:var(--surface-2);border:2px solid var(--line);border-radius:var(--radius-md);padding:12px;margin:12px 0;}
+  .rev-meta{font-size:0.72rem;color:var(--ink-soft);margin-bottom:6px;}
+  .rev-q{font-size:0.95rem;margin-bottom:6px;}
+  .rev-choices{margin:6px 0;padding-left:20px;font-size:0.9rem;}
+  .rev-correct{font-weight:700;color:var(--court-green);}
+  .rev-explain{font-size:0.85rem;margin:6px 0;}
+  .rev-evidence{font-size:0.75rem;color:var(--ink-soft);border-left:3px solid var(--line);padding-left:8px;margin:6px 0;}
+  .rev-warn{font-size:0.8rem;color:var(--flag-red);margin:6px 0;}
+  .rev-diagram{max-width:220px;margin:8px 0;}
+  .rev-diagram svg{width:100%;height:auto;}
+  .rev-diagram-pick{display:block;font-size:0.8rem;margin:6px 0;}
+  .rev-diagram-pick select{max-width:100%;}
+  .rev-tabs{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;}
+  .rev-tab-on{border-color:var(--ball);font-weight:700;}
 
   /* ---------- start screen ---------- */
   .start-hero{text-align:center;padding:18px 6px 6px;}
@@ -804,9 +818,15 @@
 (function(){
   "use strict";
 
-  var APP_VERSION = "1.42";
+  var APP_VERSION = "1.43";
 
   var CHANGELOG = [
+    {version:'1.43', date:'2026-10-03', sections:[
+      {title:'改善', icon:'up', items:[
+        '「バスケはかせに聞く」が、2026年版のミニバスケットボール競技規則の本文をもとに答えるようになった(ショットクロックは24秒など、答えがより正確に)',
+        '「出典」に、答えの根拠にした本物の条文名が出るようになった'
+      ]}
+    ]},
     {version:'1.42', date:'2026-10-03', sections:[
       {title:'改善', icon:'up', items:[
         '作戦盤のコートを体育館のような木目のフロア+オレンジのキー(塗り)に変更',
@@ -2766,7 +2786,7 @@
       '<div class="card start-hero">' +
         '<div class="top-row">'+profileChip()+'</div>' +
         hoopIllustSVG() +
-        '<h1>バスケ はかせクイズ</h1>' +
+        '<h1 onclick="aiTitleTap()">バスケ はかせクイズ</h1>' +
         '<p class="sub">ミニバスの試合で実際に出てくるルール・しんぱんのサイン・チームディフェンス・さくせんを、4択(たく)クイズでたしかめよう。解くたびに問題が変わるよ!</p>' +
         '<div class="mode-grid">' + modeCard('player') + modeCard('official') + weakEntryCard() + '</div>' +
         '<div class="start-actions">' +
@@ -4673,6 +4693,241 @@
     }).catch(function(){});
   }
 
+  /* ---------------- AI問題レビュー(管理者用・隠し画面) ----------------
+     パスフレーズはこのページのメモリ上にだけ保持し、保存しない。判定は毎回Worker側で行う。 */
+  var AI_ADMIN_URL = AI_WORKER_URL.replace(/\/ask$/, '');
+  var aiRev = {pass:'', tab:'pending', items:[], total:0, loading:false, msg:'', gateError:''};
+  var aiTitleTaps = 0, aiTitleTapTimer = null;
+  var AI_DIAGRAM_OPTIONS = (function(){
+    var plain = ['court','tally','pivot','zoneWeak','help','pickroll','pressbreak','outOfBounds','altPossession','onBall','closeout','boxout','transitionDef','transitionOff','handoff','spacing','post','staggeredScreen','relocate','pop','manToMan','goaltend','fiveOut','doubleTeam','deny','scoresheet','coachTimeout','subBoard','foulOut','horn','dribbleViolation'];
+    var kinds = {
+      referee:['wrist','rotate','whistle','tshape','push','noscore','fingerT','wristup','twohands','timeoutsign','threefingers','substitution','kicking','hips','fivefingers','disqualify'],
+      clock:['shotclock','quarterlen','qintervallen','overtimelen','halftimelen','freethrow5','closely','backcourt'],
+      clockTrigger:['whistle','shotclock','throwin','rebound','jumpball','freethrow'],
+      screenDef:['under','top','switch'],
+      cut:['backdoor','vcut'],
+      dribbleViolation:['double','carry']
+    };
+    var out = plain.map(function(t){ return {value:t, label:t}; });
+    Object.keys(kinds).forEach(function(t){
+      kinds[t].forEach(function(k){ out.push({value:t+':'+k, label:t+' / '+k}); });
+    });
+    return out;
+  })();
+
+  window.aiTitleTap = function(){
+    aiTitleTaps++;
+    clearTimeout(aiTitleTapTimer);
+    aiTitleTapTimer = setTimeout(function(){ aiTitleTaps = 0; }, 2000);
+    if(aiTitleTaps >= 7){ aiTitleTaps = 0; window.showAIReview(); }
+  };
+
+  window.showAIReview = function(){
+    stopTickers();
+    aiRev.gateError = '';
+    state.screen = aiRev.pass ? 'aiReview' : 'aiReviewGate';
+    render();
+    if(aiRev.pass) aiReviewLoad();
+  };
+
+  function aiAdminCall(path, body){
+    return fetch(AI_ADMIN_URL + path, {
+      method:'POST',
+      headers:{'Content-Type':'application/json', 'X-Admin-Passphrase':aiRev.pass},
+      body:JSON.stringify(body || {})
+    }).then(function(r){
+      return r.json().catch(function(){ return {}; }).then(function(j){
+        if(!r.ok) throw new Error((j && j.error) || ('HTTP ' + r.status));
+        return j;
+      });
+    });
+  }
+
+  window.aiReviewLogin = function(){
+    var el = document.getElementById('ai-rev-pass');
+    var v = el ? el.value : '';
+    if(!v) return;
+    aiRev.pass = v;
+    aiRev.gateError = '確認中…';
+    render();
+    aiAdminCall('/admin/ping').then(function(){
+      aiRev.gateError = '';
+      state.screen = 'aiReview';
+      render();
+      aiReviewLoad();
+    }).catch(function(e){
+      aiRev.pass = '';
+      aiRev.gateError = (e && e.message === 'unauthorized') ? 'パスフレーズがちがいます' : ('つながりません: ' + (e && e.message));
+      render();
+    });
+  };
+
+  window.aiReviewLock = function(){
+    aiRev.pass = ''; aiRev.items = []; aiRev.msg = '';
+    state.screen = 'start';
+    render();
+  };
+
+  function aiReviewLoad(){
+    aiRev.loading = true;
+    render();
+    aiAdminCall('/admin/list', {status:aiRev.tab}).then(function(res){
+      aiRev.items = res.items || [];
+      aiRev.total = res.total || 0;
+      aiRev.loading = false;
+      render();
+    }).catch(function(e){
+      aiRev.loading = false;
+      aiRev.msg = '読みこみに失敗: ' + (e && e.message);
+      render();
+    });
+  }
+
+  window.aiReviewTab = function(tab){
+    aiRev.tab = tab;
+    aiRev.msg = '';
+    aiReviewLoad();
+  };
+
+  window.aiReviewGenerate = function(){
+    if(aiRev.loading) return;
+    aiRev.loading = true;
+    aiRev.msg = '生成中です(30秒〜1分ほどかかります)…';
+    render();
+    aiAdminCall('/admin/generate', {excerpts:3}).then(function(res){
+      aiRev.msg = res.created + '問を作りました(' + (res.rejected || []).length + '問は自動チェックで不合格)';
+      aiRev.loading = false;
+      aiRev.tab = 'pending';
+      aiReviewLoad();
+    }).catch(function(e){
+      aiRev.loading = false;
+      aiRev.msg = '生成に失敗: ' + (e && e.message);
+      render();
+    });
+  };
+
+  window.aiReviewSet = function(id, status){
+    aiAdminCall('/admin/review', {id:id, status:status}).then(function(){
+      aiRev.items = aiRev.items.filter(function(r){ return r.id !== id; });
+      aiRev.total = Math.max(0, aiRev.total - 1);
+      render();
+    }).catch(function(e){ aiRev.msg = '更新に失敗: ' + (e && e.message); render(); });
+  };
+
+  window.aiReviewSetDiagram = function(id, value){
+    var parts = value.split(':');
+    var diagram = {type:parts[0]};
+    if(parts[1]){ diagram[parts[0] === 'referee' ? 'pose' : 'kind'] = parts[1]; }
+    var rec = aiRev.items.filter(function(r){ return r.id === id; })[0];
+    if(!rec) return;
+    aiAdminCall('/admin/review', {id:id, status:rec.status, diagram:diagram}).then(function(){
+      rec.q.diagram = diagram;
+      render();
+    }).catch(function(e){ aiRev.msg = '図の変更に失敗: ' + (e && e.message); render(); });
+  };
+
+  window.aiReviewMarkMerged = function(){
+    var ids = aiRev.items.map(function(r){ return r.id; });
+    if(!ids.length) return;
+    if(!confirm('承認ずみ ' + ids.length + ' 問を「本番に反映ずみ」にします。アプリのコードに追加し終わったあとで押してください。よろしいですか?')) return;
+    aiAdminCall('/admin/mark-merged', {ids:ids}).then(function(res){
+      aiRev.msg = res.merged + '問を反映ずみにしました';
+      aiReviewLoad();
+    }).catch(function(e){ aiRev.msg = '更新に失敗: ' + (e && e.message); render(); });
+  };
+
+  function aiNorm(s){ return String(s || '').normalize('NFKC').replace(/[\s　・、。,.\-−―ー「」『』()\[\]【】:：;；!！?？]/g, ''); }
+  function aiBigrams(s){ var o = {}; for(var i = 0; i < s.length - 1; i++) o[s.slice(i, i + 2)] = 1; return o; }
+  function aiSimilarity(a, b){
+    var A = aiBigrams(aiNorm(a)), B = aiBigrams(aiNorm(b));
+    var ak = Object.keys(A), inter = 0;
+    ak.forEach(function(g){ if(B[g]) inter++; });
+    var union = ak.length + Object.keys(B).length - inter;
+    return union ? inter / union : 0;
+  }
+  function aiDuplicateOf(q){
+    var best = null, bestScore = 0;
+    QUESTIONS.concat(QUESTIONS_OFFICIAL).forEach(function(e){
+      var s = aiSimilarity(q.term + ' ' + q.q, e.term + ' ' + e.q);
+      if(s > bestScore){ bestScore = s; best = e; }
+    });
+    return bestScore >= 0.4 ? {score:bestScore, q:best} : null;
+  }
+
+  function aiJsq(s){ return "'" + String(s).replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/\n/g, '\\n') + "'"; }
+  function aiQuestionJs(q){
+    var d = q.diagram, dj = "{type:" + aiJsq(d.type) + (d.pose ? ", pose:" + aiJsq(d.pose) : '') + (d.kind ? ", kind:" + aiJsq(d.kind) : '') + "}";
+    return "    {cat:" + aiJsq(q.cat) + ", term:" + aiJsq(q.term) + ", q:" + aiJsq(q.q) + ", choices:[" + q.choices.map(aiJsq).join(',') + "], correct:" + q.correct + ",\n" +
+      "      explain:" + aiJsq(q.explain) + ",\n" +
+      "      diagram:" + dj + ", source:" + aiJsq(q.source) + "},";
+  }
+
+  function renderAIReviewGate(){
+    return '<div class="scoreboard"><div class="title">AI問題レビュー</div><button class="back-btn" onclick="backToStart()">← もどる</button></div>' +
+      '<div class="card">' +
+        '<p class="meta-line">管理者用の画面です。パスフレーズを入れてください。</p>' +
+        '<input type="password" class="text-input" id="ai-rev-pass" autocomplete="off" placeholder="パスフレーズ" />' +
+        '<div class="start-actions" style="margin-top:10px"><button class="btn" onclick="aiReviewLogin()">ひらく</button></div>' +
+        (aiRev.gateError ? '<p class="ai-error">'+escapeHtml(aiRev.gateError)+'</p>' : '') +
+      '</div>';
+  }
+
+  function aiReviewItemHtml(rec){
+    var q = rec.q || {};
+    var svg = '';
+    try{ svg = buildDiagram({cat:q.cat, diagram:q.diagram}); }catch(e){ svg = '<p class="meta-line">図を表示できません</p>'; }
+    var cur = q.diagram.type + (q.diagram.pose ? ':' + q.diagram.pose : (q.diagram.kind ? ':' + q.diagram.kind : ''));
+    var opts = AI_DIAGRAM_OPTIONS.map(function(o){
+      return '<option value="'+escapeHtml(o.value)+'"'+(o.value === cur ? ' selected' : '')+'>'+escapeHtml(o.label)+'</option>';
+    }).join('');
+    var choices = q.choices.map(function(c, i){
+      return '<li class="'+(i === q.correct ? 'rev-correct' : '')+'">'+(i === q.correct ? '◎ ' : '')+escapeHtml(c)+'</li>';
+    }).join('');
+    var dup = aiDuplicateOf(q);
+    var dupHtml = dup ? '<p class="rev-warn">似た問題が既にあります(類似度 '+Math.round(dup.score*100)+'%): '+escapeHtml(dup.q.q)+'</p>' : '';
+    var id = escapeHtml(rec.id);
+    var buttons = '';
+    if(aiRev.tab !== 'approved') buttons += '<button class="btn" onclick="aiReviewSet(\''+id+'\',\'approved\')">承認</button>';
+    if(aiRev.tab !== 'rejected') buttons += '<button class="btn btn-ghost" onclick="aiReviewSet(\''+id+'\',\'rejected\')">却下</button>';
+    if(aiRev.tab !== 'pending') buttons += '<button class="btn btn-ghost" onclick="aiReviewSet(\''+id+'\',\'pending\')">保留にもどす</button>';
+    return '<div class="rev-item">' +
+      '<div class="rev-meta">'+escapeHtml(q.source)+' / '+escapeHtml((CATS[q.cat] || {}).label || q.cat)+' / '+(q.pool === 'official' ? 'オフィシャル編' : 'せんしゅ編')+'</div>' +
+      '<div class="rev-q"><strong>'+escapeHtml(q.term)+'</strong><br>'+escapeHtml(q.q)+'</div>' +
+      '<ul class="rev-choices">'+choices+'</ul>' +
+      '<div class="rev-explain">'+escapeHtml(q.explain)+'</div>' +
+      '<div class="rev-evidence">根拠(条文の原文): '+escapeHtml(q.evidence || '')+'</div>' +
+      dupHtml +
+      '<div class="rev-diagram">'+svg+'</div>' +
+      '<label class="rev-diagram-pick">図: <select onchange="aiReviewSetDiagram(\''+id+'\', this.value)">'+opts+'</select></label>' +
+      '<div class="start-actions">'+buttons+'</div>' +
+    '</div>';
+  }
+
+  function renderAIReview(){
+    var tabs = [['pending','確認待ち'],['approved','承認ずみ'],['rejected','却下'],['merged','反映ずみ']].map(function(t){
+      return '<button class="btn btn-ghost'+(aiRev.tab === t[0] ? ' rev-tab-on' : '')+'" onclick="aiReviewTab(\''+t[0]+'\')">'+t[1]+'</button>';
+    }).join('');
+    var list = aiRev.items.map(aiReviewItemHtml).join('') || (aiRev.loading ? '' : '<p class="meta-line">この一覧は空です。</p>');
+    var exportHtml = '';
+    if(aiRev.tab === 'approved' && aiRev.items.length){
+      var player = aiRev.items.filter(function(r){ return r.q.pool !== 'official'; });
+      var official = aiRev.items.filter(function(r){ return r.q.pool === 'official'; });
+      var code = '';
+      if(player.length) code += '// ▼ QUESTIONS(せんしゅ編)に追加\n' + player.map(function(r){ return aiQuestionJs(r.q); }).join('\n') + '\n';
+      if(official.length) code += '// ▼ QUESTIONS_OFFICIAL(オフィシャル編)に追加\n' + official.map(function(r){ return aiQuestionJs(r.q); }).join('\n') + '\n';
+      exportHtml = '<div class="card"><p class="meta-line">承認ずみの問題のコードです。Claudeに貼りつけて本番に反映してもらってください。</p>' +
+        '<textarea class="code-box" readonly onclick="this.select()">'+escapeHtml(code)+'</textarea>' +
+        '<div class="start-actions" style="margin-top:10px"><button class="btn btn-ghost" onclick="aiReviewMarkMerged()">本番に反映したので「反映ずみ」にする</button></div></div>';
+    }
+    return '<div class="scoreboard"><div class="title">AI問題レビュー</div><button class="back-btn" onclick="aiReviewLock()">鍵をかけて出る</button></div>' +
+      '<div class="card">' +
+        '<div class="start-actions"><button class="btn" onclick="aiReviewGenerate()" '+(aiRev.loading ? 'disabled' : '')+'>新しく問題を生成する</button></div>' +
+        '<div class="rev-tabs">'+tabs+'</div>' +
+        '<p class="meta-line">'+(aiRev.loading ? '読みこみ中…' : ('件数: ' + aiRev.total + (aiRev.total > aiRev.items.length ? '(先頭' + aiRev.items.length + '件を表示)' : '')))+'</p>' +
+        (aiRev.msg ? '<p class="meta-line">'+escapeHtml(aiRev.msg)+'</p>' : '') +
+      '</div>' + exportHtml + list;
+  }
+
   function render(){
     var app = document.getElementById('app');
     var body;
@@ -4698,6 +4953,8 @@
     else if(state.screen === 'help') body = renderHelp();
     else if(state.screen === 'weakSummary') body = renderWeakSummary();
     else if(state.screen === 'tactics') body = renderTactics();
+    else if(state.screen === 'aiReviewGate') body = renderAIReviewGate();
+    else if(state.screen === 'aiReview') body = renderAIReview();
     app.innerHTML = renderUpdateBanner() + renderStorageBanner() + body + renderLegalFooter() + renderTutorial() + renderShareCardModal();
     if(state.screen === 'askAI'){
       var aiLog = document.getElementById('ai-log');
@@ -4709,6 +4966,7 @@
   initLocalProfile();
   render();
   initDownloadsCapability();
+  if(/aiReview/.test(location.hash)) window.showAIReview();
 
   setTimeout(checkForUpdate, 3000);
   setInterval(checkForUpdate, 10 * 60 * 1000);
