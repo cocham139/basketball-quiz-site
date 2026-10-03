@@ -804,9 +804,16 @@
 (function(){
   "use strict";
 
-  var APP_VERSION = "1.41";
+  var APP_VERSION = "1.42";
 
   var CHANGELOG = [
+    {version:'1.42', date:'2026-10-03', sections:[
+      {title:'改善', icon:'up', items:[
+        '作戦盤のコートを体育館のような木目のフロア+オレンジのキー(塗り)に変更',
+        '作戦盤に3ポイントラインを追加(「3ポイントライン: ON/OFF」で切りかえ。ミニバスの試合では使わないので消せる)',
+        '作戦盤のうごきの矢印を、木目の上でも見やすい色と縁取りに変更'
+      ]}
+    ]},
     {version:'1.41', date:'2026-10-03', sections:[
       {title:'新機能', icon:'star', items:[
         '「作戦盤」を追加。青と白のマグネットとボールをドラッグして、作戦の動きを確かめられる(スタート画面のべんりツールから)',
@@ -4197,7 +4204,7 @@
   function tacticsEnsure(){
     if(state.tactics) return state.tactics;
     var saved = tacticsLoad() || {};
-    var t = {court: saved.court === 'full' ? 'full' : 'half', trails: saved.trails !== false, playing: false, playIdx: -1};
+    var t = {court: saved.court === 'full' ? 'full' : 'half', trails: saved.trails !== false, threePt: saved.threePt !== false, playing: false, playIdx: -1};
     ['half','full'].forEach(function(c){
       var s = saved[c];
       if(s && tacticsValidPos(s.pos) && Array.isArray(s.frames) && s.frames.length && s.frames.every(tacticsValidPos)){
@@ -4212,7 +4219,7 @@
   function tacticsSave(){
     try{
       var t = tacticsEnsure();
-      localStorage.setItem(TACTICS_KEY, JSON.stringify({court: t.court, trails: t.trails, half: t.half, full: t.full}));
+      localStorage.setItem(TACTICS_KEY, JSON.stringify({court: t.court, trails: t.trails, threePt: t.threePt, half: t.half, full: t.full}));
     }catch(e){}
   }
 
@@ -4234,6 +4241,10 @@
   };
   window.toggleTacticsTrails = function(){
     var t = tacticsEnsure(); t.trails = !t.trails;
+    tacticsSave(); render();
+  };
+  window.toggleTacticsThreePt = function(){
+    var t = tacticsEnsure(); t.threePt = !t.threePt;
     tacticsSave(); render();
   };
   window.tacticsReset = function(){
@@ -4343,8 +4354,11 @@
     var r = id === 'ball' ? 9.5 : 13;
     var ex = c.x - dx / d * (r + 3), ey = c.y - dy / d * (r + 3);
     var team = id === 'ball' ? 'o' : (id.charAt(0) === 'b' ? 'b' : 'w');
-    var col = {b:'#9CC4FF', w:'#FFFFFF', o:'#FFB27A'}[team];
-    return '<line x1="'+a.x.toFixed(1)+'" y1="'+a.y.toFixed(1)+'" x2="'+ex.toFixed(1)+'" y2="'+ey.toFixed(1)+'" stroke="'+col+'" stroke-width="2.4" stroke-linecap="round"'+(dashed?' stroke-dasharray="5 5"':'')+' marker-end="url(#ah-'+team+')"/>';
+    var col = {b:'#1F4FB0', w:'#FFFFFF', o:'#C94A12'}[team];
+    var pts = 'x1="'+a.x.toFixed(1)+'" y1="'+a.y.toFixed(1)+'" x2="'+ex.toFixed(1)+'" y2="'+ey.toFixed(1)+'"';
+    var dash = dashed ? ' stroke-dasharray="5 5"' : '';
+    return '<line '+pts+' stroke="#3B2410" stroke-opacity="0.55" stroke-width="5" stroke-linecap="round"'+dash+'/>' +
+      '<line '+pts+' stroke="'+col+'" stroke-width="2.6" stroke-linecap="round"'+dash+' marker-end="url(#ah-'+team+')"/>';
   }
   function tacticsTrailsInner(b){
     var out = '';
@@ -4356,23 +4370,34 @@
     return out;
   }
 
-  function tacticsHalfLines(){
-    return '<rect x="101" y="0" width="98" height="116"/>' +
+  function tacticsHalfLines(threePt){
+    return '<rect x="101" y="0" width="98" height="116" fill="#D9622F" fill-opacity="0.72"/>' +
       '<circle cx="150" cy="116" r="36"/>' +
+      (threePt ? '<path d="M18,0 L18,59.8 A135,135 0 0 0 282,59.8 L282,0"/>' : '') +
       '<line x1="132" y1="24" x2="168" y2="24" stroke-width="3.5"/>' +
-      '<circle cx="150" cy="31.5" r="6" stroke="#FFB27A" stroke-width="2.4"/>';
+      '<circle cx="150" cy="31.5" r="6" stroke="#E8622B" stroke-width="2.6"/>';
   }
-  function tacticsCourtSvg(court){
+  function tacticsCourtSvg(court, threePt){
     var L = tacticsLen(court);
-    var g = '<g fill="none" stroke="#F4F1E6" stroke-width="1.8" stroke-linejoin="round">' +
-      '<rect x="0" y="0" width="300" height="'+L+'"/>' + tacticsHalfLines();
+    var g = '<g fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linejoin="round">' +
+      '<rect x="0" y="0" width="300" height="'+L+'"/>' + tacticsHalfLines(threePt);
     if(court === 'full'){
       g += '<line x1="0" y1="280" x2="300" y2="280"/><circle cx="150" cy="280" r="36"/>' +
-        '<g transform="translate(0,560) scale(1,-1)">'+tacticsHalfLines()+'</g>';
+        '<g transform="translate(0,560) scale(1,-1)">'+tacticsHalfLines(threePt)+'</g>';
     } else {
       g += '<path d="M114,280 A36,36 0 0 1 186,280"/>';
     }
     return g + '</g>';
+  }
+  function tacticsWoodPattern(){
+    return '<pattern id="bq-wood" width="30" height="40" patternUnits="userSpaceOnUse">' +
+      '<rect x="0" y="0" width="10" height="40" fill="#E4B77B"/>' +
+      '<rect x="10" y="0" width="10" height="40" fill="#DBAA68"/>' +
+      '<rect x="20" y="0" width="10" height="40" fill="#E0B073"/>' +
+      '<g stroke="#8A5A26" stroke-opacity="0.38" stroke-width="0.8" fill="none">' +
+        '<path d="M0,0 V40 M10,0 V40 M20,0 V40"/>' +
+        '<path d="M0,0 H10 M10,20 H20 M20,10 H30 M0,30 H10 M10,40 H20 M20,30 H30"/>' +
+      '</g></pattern>';
   }
   function tacticsMagnetSvg(id, p){
     var body;
@@ -4398,15 +4423,15 @@
       '<button class="tab'+(t.court==='half'?' active':'')+'" onclick="setTacticsCourt(\'half\')">ハーフコート</button>' +
       '<button class="tab'+(t.court==='full'?' active':'')+'" onclick="setTacticsCourt(\'full\')">フルコート</button>' +
     '</div>';
-    var markers = [['b','#9CC4FF'],['w','#FFFFFF'],['o','#FFB27A']].map(function(m){
+    var markers = [['b','#1F4FB0'],['w','#FFFFFF'],['o','#C94A12']].map(function(m){
       return '<marker id="ah-'+m[0]+'" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 Z" fill="'+m[1]+'"/></marker>';
     }).join('');
     var magnets = TACTICS_IDS.map(function(id){ return tacticsMagnetSvg(id, shown[id]); }).join('');
     var svg = '<svg id="tactics-svg" class="tactics-svg'+(t.playing?' tm-animate':'')+'" viewBox="-12 -12 324 '+(L+24)+'" xmlns="http://www.w3.org/2000/svg">' +
-      '<defs>'+markers+'</defs>' +
-      '<rect x="-12" y="-12" width="324" height="'+(L+24)+'" rx="16" fill="#2F7A5C" stroke="#1F4D3A" stroke-width="3"/>' +
-      '<rect x="0" y="0" width="300" height="'+L+'" fill="#3A8A69"/>' +
-      tacticsCourtSvg(t.court) +
+      '<defs>'+markers+tacticsWoodPattern()+'</defs>' +
+      '<rect x="-12" y="-12" width="324" height="'+(L+24)+'" rx="16" fill="#A9733A" stroke="#6B4423" stroke-width="3"/>' +
+      '<rect x="0" y="0" width="300" height="'+L+'" fill="url(#bq-wood)"/>' +
+      tacticsCourtSvg(t.court, t.threePt) +
       '<g id="tactics-trails">'+(t.trails ? tacticsTrailsInner(b) : '')+'</g>' +
       magnets +
     '</svg>';
@@ -4419,6 +4444,7 @@
       '<button class="btn btn-ghost small-btn" onclick="tacticsSaveStep()"'+(b.frames.length >= TACTICS_MAX_FRAMES + 1 ? ' disabled' : '')+'>ステップを保存</button>' +
       '<button class="btn btn-ghost small-btn" onclick="tacticsUndoStep()">ひとつもどす</button>' +
       '<button class="btn btn-ghost small-btn" onclick="toggleTacticsTrails()">うごきの線: '+(t.trails?'ON':'OFF')+'</button>' +
+      '<button class="btn btn-ghost small-btn" onclick="toggleTacticsThreePt()">3ポイントライン: '+(t.threePt?'ON':'OFF')+'</button>' +
       '<button class="btn btn-ghost small-btn" onclick="tacticsReset()">さいしょからやりなおす</button>' +
     '</div>';
     return '<div class="scoreboard"><div class="title">'+tacticsIconSVG('currentColor',18)+' 作戦盤</div><button class="back-btn" onclick="backToStart()">← もどる</button></div>' +
