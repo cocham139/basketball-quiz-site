@@ -818,9 +818,17 @@
 (function(){
   "use strict";
 
-  var APP_VERSION = "1.43";
+  var APP_VERSION = "1.44";
 
   var CHANGELOG = [
+    {version:'1.44', date:'2026-10-03', sections:[
+      {title:'改善', icon:'up', items:[
+        '作戦盤は、最初はコートに何もない「プレーンな状態」から始まるように変更。青と白のマグネットとボールはコートの下の「ベンチ」にならんでいて、ドラッグしてすきな場所に置いていける',
+        'マグネットをベンチにもどすこともできる(ベンチに離すと定位置にもどる)',
+        'ベンチから置く動きには矢印をつけず、さいせいは「ならべ終えた最初の配置」からはじまる',
+        '前のバージョンで保存した「いじっていない初期配置」の作戦盤は、プレーンな状態に切りかわる(うごかして保存したものはそのまま残る)'
+      ]}
+    ]},
     {version:'1.43', date:'2026-10-03', sections:[
       {title:'改善', icon:'up', items:[
         '「バスケはかせに聞く」が、2026年版のミニバスケットボール競技規則の本文をもとに答えるようになった(ショットクロックは24秒など、答えがより正確に)',
@@ -4186,8 +4194,22 @@
   var tacticsTimer = null;
 
   function tacticsLen(court){ return court === 'full' ? 560 : 280; }
+  var TACTICS_BENCH_DROP = 76; /* ベンチ段の2列目の中心がコート下端からこの距離 */
+  function tacticsInBench(p, L){ return p.y > L + 4; }
 
-  function tacticsDefaultPos(){
+  /* 最初はプレーンなコート。マグネットは全員コートの下の「ベンチ」に並んでいて、ドラッグでコートに置いていく */
+  var TACTICS_BENCH_X = {w1:36, w2:76, w3:116, w4:156, w5:196, ball:262, b1:36, b2:76, b3:116, b4:156, b5:196};
+  function tacticsBenchSlot(id, court){
+    var L = tacticsLen(court);
+    return {x: TACTICS_BENCH_X[id], y: L + (id.charAt(0) === 'b' && id !== 'ball' ? TACTICS_BENCH_DROP : 46)};
+  }
+  function tacticsDefaultPos(court){
+    var o = {};
+    TACTICS_IDS.forEach(function(id){ o[id] = tacticsBenchSlot(id, court || 'half'); });
+    return o;
+  }
+  /* v1.42までの初期配置(保存データの移行判定用) */
+  function tacticsLegacyPos(){
     return {
       w1:{x:150,y:185}, w2:{x:85,y:140}, w3:{x:215,y:140}, w4:{x:115,y:62}, w5:{x:185,y:62},
       b1:{x:150,y:215}, b2:{x:62,y:165}, b3:{x:238,y:165}, b4:{x:92,y:88}, b5:{x:208,y:88},
@@ -4209,8 +4231,8 @@
   function tacticsPosEqual(a, b){
     return TACTICS_IDS.every(function(id){ return Math.abs(a[id].x - b[id].x) < 0.5 && Math.abs(a[id].y - b[id].y) < 0.5; });
   }
-  function tacticsNewBoard(){
-    var p = tacticsDefaultPos();
+  function tacticsNewBoard(court){
+    var p = tacticsDefaultPos(court);
     return {pos: tacticsClonePos(p), frames: [tacticsClonePos(p)]};
   }
   function tacticsLoad(){
@@ -4227,10 +4249,12 @@
     var t = {court: saved.court === 'full' ? 'full' : 'half', trails: saved.trails !== false, threePt: saved.threePt !== false, playing: false, playIdx: -1};
     ['half','full'].forEach(function(c){
       var s = saved[c];
-      if(s && tacticsValidPos(s.pos) && Array.isArray(s.frames) && s.frames.length && s.frames.every(tacticsValidPos)){
+      var untouchedLegacy = s && tacticsValidPos(s.pos) && Array.isArray(s.frames) && s.frames.length === 1 && tacticsValidPos(s.frames[0]) &&
+        tacticsPosEqual(s.pos, tacticsLegacyPos()) && tacticsPosEqual(s.frames[0], tacticsLegacyPos());
+      if(s && !untouchedLegacy && tacticsValidPos(s.pos) && Array.isArray(s.frames) && s.frames.length && s.frames.every(tacticsValidPos)){
         t[c] = {pos: tacticsClonePos(s.pos), frames: s.frames.slice(0, TACTICS_MAX_FRAMES + 1).map(tacticsClonePos)};
       } else {
-        t[c] = tacticsNewBoard();
+        t[c] = tacticsNewBoard(c);
       }
     });
     state.tactics = t;
@@ -4246,6 +4270,10 @@
   function tacticsSequence(b){
     var seq = b.frames.map(tacticsClonePos);
     if(!tacticsPosEqual(seq[seq.length - 1], b.pos)) seq.push(tacticsClonePos(b.pos));
+    /* ベンチからの「置く」動作はさいせいに含めず、最初の配置完成からはじめる */
+    var L = tacticsLen(tacticsEnsure().court);
+    function anyBench(p){ return TACTICS_IDS.some(function(id){ return tacticsInBench(p[id], L); }); }
+    if(seq.length >= 2 && anyBench(seq[0]) && !anyBench(seq[1])) seq.shift();
     return seq;
   }
   function stopTacticsPlayback(){
@@ -4269,7 +4297,7 @@
   };
   window.tacticsReset = function(){
     stopTacticsPlayback();
-    var t = tacticsEnsure(); t[t.court] = tacticsNewBoard();
+    var t = tacticsEnsure(); t[t.court] = tacticsNewBoard(t.court);
     tacticsSave(); render();
   };
   window.tacticsSaveStep = function(){
@@ -4294,7 +4322,7 @@
   window.tacticsMoveTo = function(id, x, y){
     var t = tacticsEnsure(); var b = t[t.court];
     if(!b.pos[id]) return;
-    b.pos[id] = {x: Math.max(0, Math.min(TACTICS_W, x)), y: Math.max(0, Math.min(tacticsLen(t.court), y))};
+    b.pos[id] = {x: Math.max(0, Math.min(TACTICS_W, x)), y: Math.max(0, Math.min(tacticsLen(t.court) + 80, y))};
   };
 
   function tacticsApplyDom(pos, animate){
@@ -4352,7 +4380,18 @@
     window.removeEventListener('pointermove', tacticsOnMove);
     window.removeEventListener('pointerup', tacticsOnUp);
     window.removeEventListener('pointercancel', tacticsOnUp);
-    if(tacticsDrag){ tacticsDrag = null; tacticsSave(); }
+    if(tacticsDrag){
+      var t = tacticsEnsure(); var b = t[t.court];
+      var did = tacticsDrag.id;
+      tacticsDrag = null;
+      if(tacticsInBench(b.pos[did], tacticsLen(t.court))){
+        b.pos[did] = tacticsBenchSlot(did, t.court); /* ベンチ側に離したら定位置にもどす */
+        tacticsApplyDom(b.pos, true);
+        var g = document.getElementById('tactics-trails');
+        if(g && t.trails) g.innerHTML = tacticsTrailsInner(b);
+      }
+      tacticsSave();
+    }
   }
   window.tacticsPointerDown = function(ev, id){
     var t = tacticsEnsure();
@@ -4382,11 +4421,16 @@
   }
   function tacticsTrailsInner(b){
     var out = '';
+    var L = tacticsLen(tacticsEnsure().court);
+    function leg(id, a, c, dashed){
+      if(tacticsInBench(a, L) || tacticsInBench(c, L)) return ''; /* ベンチに出し入れする動きには矢印をつけない */
+      return tacticsArrow(id, a, c, dashed);
+    }
     for(var k = 1; k < b.frames.length; k++){
-      TACTICS_IDS.forEach(function(id){ out += tacticsArrow(id, b.frames[k - 1][id], b.frames[k][id], false); });
+      TACTICS_IDS.forEach(function(id){ out += leg(id, b.frames[k - 1][id], b.frames[k][id], false); });
     }
     var last = b.frames[b.frames.length - 1];
-    TACTICS_IDS.forEach(function(id){ out += tacticsArrow(id, last[id], b.pos[id], true); });
+    TACTICS_IDS.forEach(function(id){ out += leg(id, last[id], b.pos[id], true); });
     return out;
   }
 
@@ -4447,11 +4491,13 @@
       return '<marker id="ah-'+m[0]+'" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 Z" fill="'+m[1]+'"/></marker>';
     }).join('');
     var magnets = TACTICS_IDS.map(function(id){ return tacticsMagnetSvg(id, shown[id]); }).join('');
-    var svg = '<svg id="tactics-svg" class="tactics-svg'+(t.playing?' tm-animate':'')+'" viewBox="-12 -12 324 '+(L+24)+'" xmlns="http://www.w3.org/2000/svg">' +
+    var svg = '<svg id="tactics-svg" class="tactics-svg'+(t.playing?' tm-animate':'')+'" viewBox="-12 -12 324 '+(L+112)+'" xmlns="http://www.w3.org/2000/svg">' +
       '<defs>'+markers+tacticsWoodPattern()+'</defs>' +
-      '<rect x="-12" y="-12" width="324" height="'+(L+24)+'" rx="16" fill="#A9733A" stroke="#6B4423" stroke-width="3"/>' +
+      '<rect x="-12" y="-12" width="324" height="'+(L+112)+'" rx="16" fill="#A9733A" stroke="#6B4423" stroke-width="3"/>' +
       '<rect x="0" y="0" width="300" height="'+L+'" fill="url(#bq-wood)"/>' +
       tacticsCourtSvg(t.court, t.threePt) +
+      '<rect x="0" y="'+(L+12)+'" width="300" height="82" rx="10" fill="#6B4423" fill-opacity="0.35" stroke="#6B4423" stroke-opacity="0.6" stroke-width="1.5"/>' +
+      '<text x="150" y="'+(L+26)+'" text-anchor="middle" fill="#FFF6E6" style="font:700 10px var(--font-body)">ベンチ(ここからコートへドラッグ)</text>' +
       '<g id="tactics-trails">'+(t.trails ? tacticsTrailsInner(b) : '')+'</g>' +
       magnets +
     '</svg>';
@@ -4472,7 +4518,7 @@
         tabs + svg +
         '<p id="tactics-step-label" class="meta-line tactics-hint">'+(t.playing ? 'さいせい中 '+(t.playIdx+1)+'/'+seq.length : '保存したステップ: '+savedSteps+'こ')+'</p>' +
         controls +
-        '<p class="meta-line tactics-hint">青と白のマグネットをドラッグして動かそう。うごかしたら「ステップを保存」をくりかえすと、うごきの順番が矢印でのこって「さいせい」で見かえせるよ。</p>' +
+        '<p class="meta-line tactics-hint">さいしょはコートに何もないよ。下のベンチにいる青と白のマグネットとボールをドラッグして、すきな場所に置こう(ベンチにもどすこともできるよ)。ならべたら「ステップを保存」をくりかえすと、うごきの順番が矢印でのこって「さいせい」で見かえせるよ。</p>' +
       '</div>';
   }
 
