@@ -775,30 +775,31 @@
     max-width:46ch;margin-left:auto;margin-right:auto;line-height:1.6;
   }
   .hoop-illust{width:min(230px,60%);margin:14px auto 4px;display:block;}
-  /* トップのはかせ: ふわふわ浮かんでいて、タップすると「バスケはかせに聞く」へ */
-  .hero-visual{display:flex;justify-content:center;align-items:flex-end;gap:2px;margin:14px auto 4px;}
-  .hero-visual .hoop-illust{width:min(190px,50%);margin:0;}
-  .hakase-home{flex:none;position:relative;display:flex;flex-direction:column;align-items:center;gap:4px;width:92px;padding:0;border:0;background:none;cursor:pointer;-webkit-tap-highlight-color:transparent;}
-  .hakase-home-img{display:block;width:78px;height:114px;object-fit:contain;object-position:50% 100%;transform-origin:50% 100%;pointer-events:none;user-select:none;-webkit-user-select:none;animation:hakase-float 3.6s ease-in-out infinite;}
-  .hakase-home-tag{font-size:0.7rem;font-weight:700;color:var(--ball-ink);background:var(--surface-2);border:2px solid var(--line);border-radius:999px;padding:2px 9px;white-space:nowrap;}
-  .hakase-home:hover .hakase-home-img, .hakase-home:focus-visible .hakase-home-img{animation:hakase-hop .6s ease-out 1;}
-  .hakase-home:active .hakase-home-img{transform:scale(.96);}
+  /* スタート画面のはかせ: 画面に固定されてスクロールについてきて、ボタンをよけながらあちこちを歩きまわる */
+  .hakase-wander{position:fixed;left:0;top:0;z-index:30;width:62px;height:90px;padding:0;border:0;background:none;cursor:pointer;
+    -webkit-tap-highlight-color:transparent;transition:transform 2.6s cubic-bezier(.45,.05,.3,1),opacity .3s;opacity:0;pointer-events:none;touch-action:manipulation;}
+  .hakase-wander.is-on{opacity:1;pointer-events:auto;}
+  .hakase-wander.no-anim{transition:opacity .3s;}
+  .hakase-wander-img{display:block;width:100%;height:100%;object-fit:contain;object-position:50% 100%;transform-origin:50% 100%;pointer-events:none;user-select:none;-webkit-user-select:none;
+    filter:drop-shadow(0 3px 3px rgba(60,35,10,.22));animation:hakase-float 3.4s ease-in-out infinite;}
+  .hakase-wander:hover .hakase-wander-img, .hakase-wander:focus-visible .hakase-wander-img{animation:hakase-hop .6s ease-out 1;}
+  .hakase-wander:active .hakase-wander-img{transform:scale(.94);}
   @keyframes hakase-float{
-    0%,100%{transform:translateY(0) rotate(-1.5deg);}
-    50%{transform:translateY(-9px) rotate(1.5deg);}
+    0%,100%{transform:translateY(0) rotate(-2deg);}
+    50%{transform:translateY(-6px) rotate(2deg);}
   }
   @keyframes hakase-hop{
     0%{transform:translateY(0) scale(1,1);}
-    35%{transform:translateY(-14px) scale(.97,1.05);}
+    35%{transform:translateY(-12px) scale(.97,1.05);}
     70%{transform:translateY(0) scale(1.05,.95);}
     100%{transform:translateY(0) scale(1,1);}
   }
   @media (prefers-reduced-motion: reduce){
-    .hakase-home-img{animation:none !important;}
+    .hakase-wander{transition:opacity .3s !important;}
+    .hakase-wander-img{animation:none !important;}
   }
-  @media (max-width:380px){
-    .hakase-home{width:80px;}
-    .hakase-home-img{width:66px;height:96px;}
+  @media (min-width:600px){
+    .hakase-wander{width:72px;height:104px;}
   }
   .hoop-illust .ball{
     transform-origin:150px 40px;
@@ -887,9 +888,15 @@
 (function(){
   "use strict";
 
-  var APP_VERSION = "1.46";
+  var APP_VERSION = "1.47";
 
   var CHANGELOG = [
+    {version:'1.47', date:'2026-10-04', sections:[
+      {title:'改善', icon:'up', items:[
+        'スタート画面の「はかせ」が、スクロールしてもついてくるようになった。ボタンにかぶらない場所を選んで、画面のあちこちをゆっくり歩きまわる(タップすると「バスケはかせに聞く」へ)',
+        'クイズ画面・自主トレ・べんりツールなど、スタート画面以外にははかせは出てこない'
+      ]}
+    ]},
     {version:'1.46', date:'2026-10-04', sections:[
       {title:'新機能', icon:'star', items:[
         'スタート画面に、マスコットの「はかせ」がふわふわ浮かんで登場。タップ(クリック)すると「バスケはかせに聞く」にジャンプできる'
@@ -2917,7 +2924,7 @@
     return renderScoreboard(false) +
       '<div class="card start-hero">' +
         '<div class="top-row">'+profileChip()+'</div>' +
-        '<div class="hero-visual">' + hoopIllustSVG() + hakaseHomeHtml() + '</div>' +
+        hoopIllustSVG() +
         '<h1 onclick="aiTitleTap()">バスケ はかせクイズ</h1>' +
         '<p class="sub">ミニバスの試合で実際に出てくるルール・しんぱんのサイン・チームディフェンス・さくせんを、4択(たく)クイズでたしかめよう。解くたびに問題が変わるよ!</p>' +
         '<div class="mode-grid">' + modeCard('player') + modeCard('official') + weakEntryCard() + '</div>' +
@@ -4316,12 +4323,113 @@
       '<div class="hakase-say" role="status" aria-live="polite">'+escapeHtml(hakaseLine(mood))+'</div>' +
     '</div>';
   }
-  function hakaseHomeHtml(){
-    return '<button type="button" class="hakase-home" onclick="showAskAI()" aria-label="バスケはかせに聞く">' +
-      '<img class="hakase-home-img" src="'+(HAKASE_IMGS.idle || HAKASE_IMG_DEFAULT)+'" alt="" draggable="false">' +
-      '<span class="hakase-home-tag">きいてみる?</span>' +
-    '</button>';
+  /* ---------------- スタート画面のはかせ(スクロール追従+ボタンをよけてさまよう) ---------------- */
+  var wander = {el:null, x:0, y:0, w:62, h:90, moveTimer:null, scrollTimer:null, listening:false, placed:false};
+
+  function wanderShouldShow(){
+    return state.screen === 'start' && !state.showTutorial && !state.celebrate && !state.shareCard;
   }
+  function wanderOverlap(box, rects){
+    var total = 0;
+    rects.forEach(function(r){
+      var w = Math.min(box.x + box.w, r.r) - Math.max(box.x, r.l);
+      var h = Math.min(box.y + box.h, r.b) - Math.max(box.y, r.t);
+      if(w > 0 && h > 0) total += w * h;
+    });
+    return total;
+  }
+  /* 候補の位置を作り、ボタンなどと重なりが少なく、いまの場所から少し離れた所を選ぶ(純粋関数) */
+  function wanderChoose(vw, vh, w, h, rects, cur, rnd, minMove){
+    var cands = [];
+    var minX = -w * 0.3, maxX = vw - w * 0.7, minY = 8, maxY = Math.max(minY, vh - h - 8);
+    var i;
+    for(i = 0; i < 36; i++) cands.push({x: minX + rnd() * (maxX - minX), y: minY + rnd() * (maxY - minY)});
+    [4, vw - w - 4].forEach(function(x){ for(i = 0; i < 6; i++) cands.push({x: x, y: minY + (maxY - minY) * i / 5}); });
+    var best = null, bestScore = Infinity;
+    cands.forEach(function(c){
+      var ov = wanderOverlap({x: c.x, y: c.y, w: w, h: h}, rects);
+      var dist = cur ? Math.sqrt(Math.pow(c.x - cur.x, 2) + Math.pow(c.y - cur.y, 2)) : 999;
+      var score = ov;
+      if(dist < (minMove || 0)) score += 1e7;           /* ほとんど動かない候補は避ける */
+      if(c.x < 0 || c.x + w > vw) score += 120;          /* 画面のはしからのぞく位置は少しだけ不利 */
+      score += dist * 0.05;
+      if(score < bestScore){ bestScore = score; best = c; }
+    });
+    return {x: best.x, y: best.y, overlap: wanderOverlap({x: best.x, y: best.y, w: w, h: h}, rects)};
+  }
+  function wanderRects(){
+    var out = [];
+    if(typeof document.querySelectorAll !== 'function') return out;
+    var list = document.querySelectorAll('#app button, #app a, #app input, #app textarea, #app select, #app label');
+    for(var i = 0; i < list.length; i++){
+      var r = list[i].getBoundingClientRect();
+      if(r.width < 2 || r.height < 2 || r.bottom < 0 || r.top > window.innerHeight) continue;
+      out.push({l: r.left, t: r.top, r: r.right, b: r.bottom});
+    }
+    return out;
+  }
+  function wanderReduced(){
+    try{ return !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches); }catch(e){ return false; }
+  }
+  function wanderApply(animate){
+    if(!wander.el) return;
+    if(animate && !wanderReduced()) wander.el.classList.remove('no-anim'); else wander.el.classList.add('no-anim');
+    wander.el.style.transform = 'translate(' + wander.x.toFixed(1) + 'px,' + wander.y.toFixed(1) + 'px)';
+  }
+  function wanderMove(force){
+    if(!wander.el || !wanderShouldShow()) return;
+    var vw = window.innerWidth, vh = window.innerHeight;
+    var rects = wanderRects();
+    var cur = {x: wander.x, y: wander.y};
+    var here = wander.placed ? wanderOverlap({x: wander.x, y: wander.y, w: wander.w, h: wander.h}, rects) : 1;
+    if(!force && here === 0 && wander.placed) return;     /* いまの場所がじゃましていなければそのまま */
+    var pick = wanderChoose(vw, vh, wander.w, wander.h, rects, wander.placed ? cur : null, Math.random, wander.placed ? 90 : 0);
+    var first = !wander.placed;
+    wander.x = pick.x; wander.y = pick.y; wander.placed = true;
+    wanderApply(!first);
+  }
+  function wanderTick(){
+    wanderMove(true);
+    wander.moveTimer = setTimeout(wanderTick, 5200 + Math.random() * 3000);
+  }
+  function wanderOnScroll(){
+    clearTimeout(wander.scrollTimer);
+    wander.scrollTimer = setTimeout(function(){ wanderMove(false); }, 160);
+  }
+  function wanderEnsureEl(){
+    if(wander.el || typeof document.createElement !== 'function' || !document.body) return;
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'hakase-wander';
+    b.setAttribute('aria-label', 'バスケはかせに聞く');
+    b.setAttribute('title', 'バスケはかせに聞く');
+    b.innerHTML = '<img class="hakase-wander-img" src="'+(HAKASE_IMGS.idle || HAKASE_IMG_DEFAULT)+'" alt="" draggable="false">';
+    b.onclick = function(){ window.showAskAI(); };
+    document.body.appendChild(b);
+    wander.el = b;
+  }
+  /* render()のたびに呼ぶ。スタート画面でだけ表示し、それ以外では隠してタイマーも止める */
+  function wanderSync(){
+    try{
+      if(wanderShouldShow()){
+        wanderEnsureEl();
+        if(!wander.el) return;
+        wander.el.classList.add('is-on');
+        if(!wander.listening && typeof window.addEventListener === 'function'){
+          window.addEventListener('scroll', wanderOnScroll, {passive: true});
+          window.addEventListener('resize', wanderOnScroll);
+          wander.listening = true;
+        }
+        if(!wander.moveTimer){ wander.moveTimer = setTimeout(wanderTick, 50); }
+        else { clearTimeout(wander.scrollTimer); wander.scrollTimer = setTimeout(function(){ wanderMove(false); }, 60); }
+      } else {
+        if(wander.el) wander.el.classList.remove('is-on');
+        clearTimeout(wander.moveTimer); wander.moveTimer = null;
+        clearTimeout(wander.scrollTimer);
+      }
+    }catch(e){ /* decoration only: never break the app */ }
+  }
+
   function hakaseCelebrate(){
     state.askAIJustAnswered = true;
     clearTimeout(hakaseProudTimer);
@@ -5177,6 +5285,7 @@
       if(aiLog) aiLog.scrollTop = aiLog.scrollHeight;
     }
     if(state.shareCard) drawShareCard();
+    wanderSync();
   }
 
   initLocalProfile();
