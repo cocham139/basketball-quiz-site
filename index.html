@@ -794,9 +794,17 @@
     70%{transform:translateY(0) scale(1.05,.95);}
     100%{transform:translateY(0) scale(1,1);}
   }
+  .hakase-wander-say{position:absolute;right:calc(100% - 4px);top:4px;width:max-content;max-width:148px;padding:7px 11px;border-radius:14px;border-bottom-right-radius:3px;
+    background:var(--surface);border:2px solid var(--line);color:var(--ink);font-size:0.76rem;font-weight:700;line-height:1.4;text-align:left;
+    opacity:0;transform:scale(.85) translateY(4px);transform-origin:100% 100%;transition:opacity .25s ease,transform .25s ease;pointer-events:none;
+    box-shadow:0 3px 8px rgba(60,35,10,.15);}
+  .hakase-wander-say.show{opacity:1;transform:none;}
+  .hakase-wander-say::after{content:"";position:absolute;right:-7px;bottom:6px;width:10px;height:10px;background:var(--surface);
+    border-right:2px solid var(--line);border-bottom:2px solid var(--line);transform:rotate(-45deg) skew(8deg,8deg);border-radius:0 0 3px 0;}
   @media (prefers-reduced-motion: reduce){
     .hakase-wander{transition:opacity .3s !important;}
     .hakase-wander-img{animation:none !important;}
+    .hakase-wander-say{transition:opacity .2s !important;transform:none !important;}
   }
   @media (min-width:600px){
     .hakase-wander{width:72px;height:104px;}
@@ -888,9 +896,15 @@
 (function(){
   "use strict";
 
-  var APP_VERSION = "1.47";
+  var APP_VERSION = "1.48";
 
   var CHANGELOG = [
+    {version:'1.48', date:'2026-10-04', sections:[
+      {title:'改善', icon:'up', items:[
+        'スタート画面の「はかせ」が、画面の右はしに寄って、ふわふわ上下に漂うようになった(ボタンにはかぶらない)',
+        'はかせが「僕になんでも聞いてみて!」など3種類のひとことを、ランダムに吹き出しで話すようになった(吹き出しもボタンにかぶらない場所で出る)'
+      ]}
+    ]},
     {version:'1.47', date:'2026-10-04', sections:[
       {title:'改善', icon:'up', items:[
         'スタート画面の「はかせ」が、スクロールしてもついてくるようになった。ボタンにかぶらない場所を選んで、画面のあちこちをゆっくり歩きまわる(タップすると「バスケはかせに聞く」へ)',
@@ -4324,11 +4338,21 @@
     '</div>';
   }
   /* ---------------- スタート画面のはかせ(スクロール追従+ボタンをよけてさまよう) ---------------- */
-  var wander = {el:null, x:0, y:0, w:62, h:90, moveTimer:null, scrollTimer:null, listening:false, placed:false};
+  var wander = {el:null, say:null, x:0, y:0, w:62, h:90, moveTimer:null, scrollTimer:null, sayTimer:null, lastLine:-1, listening:false, placed:false};
+  var WANDER_LINES = ['僕になんでも聞いてみて!', 'ルールも練習のことも、教えちゃうよ!', 'わからないことは、ぼくにまかせて!'];
+  /* 直前と同じセリフが続かないように、ランダムに1つ選ぶ(純粋関数) */
+  function wanderPickLine(n, last, rnd){
+    if(n <= 1) return 0;
+    if(last < 0) return Math.floor(rnd() * n);
+    var i = Math.floor(rnd() * (n - 1));
+    return i >= last && last >= 0 ? i + 1 : i;
+  }
 
   function wanderShouldShow(){
     return state.screen === 'start' && !state.showTutorial && !state.celebrate && !state.shareCard;
   }
+  var WANDER_BUBBLE = {w: 148, h: 48};   /* 吹き出しが出る範囲(はかせの左がわ) */
+  function wanderBubbleBox(x, y){ return {x: x - WANDER_BUBBLE.w + 4, y: y + 4, w: WANDER_BUBBLE.w, h: WANDER_BUBBLE.h}; }
   function wanderOverlap(box, rects){
     var total = 0;
     rects.forEach(function(r){
@@ -4338,20 +4362,20 @@
     });
     return total;
   }
-  /* 候補の位置を作り、ボタンなどと重なりが少なく、いまの場所から少し離れた所を選ぶ(純粋関数) */
+  /* 画面の右はしをふわふわ上下に漂う。ボタンなどと重なりが少なく、いまの場所から少し離れた所を選ぶ(純粋関数) */
   function wanderChoose(vw, vh, w, h, rects, cur, rnd, minMove){
     var cands = [];
-    var minX = -w * 0.3, maxX = vw - w * 0.7, minY = 8, maxY = Math.max(minY, vh - h - 8);
+    var minX = vw - w - 4, maxX = vw - w * 0.62, minY = 8, maxY = Math.max(minY, vh - h - 8);
     var i;
-    for(i = 0; i < 36; i++) cands.push({x: minX + rnd() * (maxX - minX), y: minY + rnd() * (maxY - minY)});
-    [4, vw - w - 4].forEach(function(x){ for(i = 0; i < 6; i++) cands.push({x: x, y: minY + (maxY - minY) * i / 5}); });
+    for(i = 0; i < 40; i++) cands.push({x: minX + rnd() * (maxX - minX), y: minY + rnd() * (maxY - minY)});
+    for(i = 0; i < 9; i++) cands.push({x: minX, y: minY + (maxY - minY) * i / 8});
     var best = null, bestScore = Infinity;
     cands.forEach(function(c){
-      var ov = wanderOverlap({x: c.x, y: c.y, w: w, h: h}, rects);
+      var ov = wanderOverlap({x: c.x, y: c.y, w: w, h: h}, rects) + 0.6 * wanderOverlap(wanderBubbleBox(c.x, c.y), rects);   /* 吹き出しがボタンにかぶる場所も避ける */
       var dist = cur ? Math.sqrt(Math.pow(c.x - cur.x, 2) + Math.pow(c.y - cur.y, 2)) : 999;
       var score = ov;
       if(dist < (minMove || 0)) score += 1e7;           /* ほとんど動かない候補は避ける */
-      if(c.x < 0 || c.x + w > vw) score += 120;          /* 画面のはしからのぞく位置は少しだけ不利 */
+      score += Math.max(0, c.x + w - vw) * 3;            /* 右はしから出る分は、ほんの少しだけ不利 */
       score += dist * 0.05;
       if(score < bestScore){ bestScore = score; best = c; }
     });
@@ -4381,7 +4405,7 @@
     var vw = window.innerWidth, vh = window.innerHeight;
     var rects = wanderRects();
     var cur = {x: wander.x, y: wander.y};
-    var here = wander.placed ? wanderOverlap({x: wander.x, y: wander.y, w: wander.w, h: wander.h}, rects) : 1;
+    var here = wander.placed ? wanderOverlap({x: wander.x, y: wander.y, w: wander.w, h: wander.h}, rects) + 0.6 * wanderOverlap(wanderBubbleBox(wander.x, wander.y), rects) : 1;
     if(!force && here === 0 && wander.placed) return;     /* いまの場所がじゃましていなければそのまま */
     var pick = wanderChoose(vw, vh, wander.w, wander.h, rects, wander.placed ? cur : null, Math.random, wander.placed ? 90 : 0);
     var first = !wander.placed;
@@ -4404,9 +4428,29 @@
     b.setAttribute('aria-label', 'バスケはかせに聞く');
     b.setAttribute('title', 'バスケはかせに聞く');
     b.innerHTML = '<img class="hakase-wander-img" src="'+(HAKASE_IMGS.idle || HAKASE_IMG_DEFAULT)+'" alt="" draggable="false">';
+    var say = document.createElement('span');
+    say.className = 'hakase-wander-say';
+    say.setAttribute('aria-hidden', 'true');
+    b.appendChild(say);
     b.onclick = function(){ window.showAskAI(); };
     document.body.appendChild(b);
     wander.el = b;
+    wander.say = say;
+  }
+  function wanderSayShow(){
+    if(!wander.say || !wanderShouldShow()) return;
+    if(wanderOverlap(wanderBubbleBox(wander.x, wander.y), wanderRects()) > 0){   /* ボタンにかぶるときは出さずに、少し待ってもう一度 */
+      wander.sayTimer = setTimeout(wanderSayShow, 1800);
+      return;
+    }
+    wander.lastLine = wanderPickLine(WANDER_LINES.length, wander.lastLine, Math.random);
+    wander.say.textContent = WANDER_LINES[wander.lastLine];
+    wander.say.classList.add('show');
+    wander.sayTimer = setTimeout(wanderSayHide, 4600);
+  }
+  function wanderSayHide(){
+    if(wander.say) wander.say.classList.remove('show');
+    wander.sayTimer = setTimeout(wanderSayShow, 3200 + Math.random() * 2000);
   }
   /* render()のたびに呼ぶ。スタート画面でだけ表示し、それ以外では隠してタイマーも止める */
   function wanderSync(){
@@ -4420,12 +4464,15 @@
           window.addEventListener('resize', wanderOnScroll);
           wander.listening = true;
         }
+        if(!wander.sayTimer){ wander.sayTimer = setTimeout(wanderSayShow, 1200); }
         if(!wander.moveTimer){ wander.moveTimer = setTimeout(wanderTick, 50); }
         else { clearTimeout(wander.scrollTimer); wander.scrollTimer = setTimeout(function(){ wanderMove(false); }, 60); }
       } else {
         if(wander.el) wander.el.classList.remove('is-on');
         clearTimeout(wander.moveTimer); wander.moveTimer = null;
         clearTimeout(wander.scrollTimer);
+        clearTimeout(wander.sayTimer); wander.sayTimer = null;
+        if(wander.say) wander.say.classList.remove('show');
       }
     }catch(e){ /* decoration only: never break the app */ }
   }
