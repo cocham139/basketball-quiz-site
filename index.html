@@ -707,6 +707,22 @@
   .ai-send-btn{flex:none;width:44px;height:44px;padding:0;border-radius:50%;}
   .ai-disclaimer{opacity:0.75;}
   .ai-source{font-size:0.72rem;color:var(--ink-soft);margin-top:4px;opacity:0.85;}
+  /* ---------- 声でしつもん(マイク) ---------- */
+  .ai-mic-btn{flex:none;width:44px;height:44px;padding:0;border-radius:50%;display:flex;align-items:center;justify-content:center;}
+  .ai-mic-btn.listening{background:var(--flag-red);border-color:var(--flag-red);color:#fff;animation:ai-mic-pulse 1.3s ease-out infinite;}
+  .ai-voice-status{color:var(--flag-red);font-weight:700;text-align:center;}
+  @keyframes ai-mic-pulse{
+    0%{box-shadow:0 0 0 0 rgba(200,60,40,.45);}
+    100%{box-shadow:0 0 0 14px rgba(200,60,40,0);}
+  }
+  /* ---------- ふりがな ---------- */
+  ruby{ruby-position:over;}
+  rt{font-size:0.52em;font-weight:500;line-height:1;letter-spacing:0;color:var(--ink-soft);font-family:var(--font-body);}
+  .furi-on .ai-bubble, .furi-on .help-body p, .furi-on .q-text, .furi-on .explain, .furi-on .sub{line-height:1.95;}
+  .furi-toggle{font-size:0.8rem;padding:6px 14px;}
+  @media (prefers-reduced-motion: reduce){
+    .ai-mic-btn.listening{animation:none !important;}
+  }
   /* ---------- はかせ(マスコット) ---------- */
   .hakase-stage{display:flex;align-items:flex-end;gap:10px;min-height:138px;}
   .hakase-fig{flex:none;width:94px;height:138px;position:relative;}
@@ -896,9 +912,19 @@
 (function(){
   "use strict";
 
-  var APP_VERSION = "1.49";
+  var APP_VERSION = "1.50";
 
   var CHANGELOG = [
+    {version:'1.50', date:'2026-10-04', sections:[
+      {title:'新機能', icon:'star', items:[
+        '「バスケはかせに聞く」で、声でしつもんできるようになった! マイクのボタンをおして話すと、文字になって入力される(おわったら送るボタンをおそう)。使えないブラウザではマイクのボタンは出ない',
+        'むずかしい漢字に「ふりがな」が出るようになった(小学2年生までに習う漢字だけの言葉には出ない)。スタート画面の「ふりがな: ON/OFF」ボタンで、出したり消したりできる'
+      ]},
+      {title:'改善', icon:'up', items:[
+        '「使い方」のページを、小学3年生にもわかるようにやさしい言葉に書きなおした(作戦盤・バスケノート・ふりがななどの説明も追加)',
+        '「バスケはかせ」の答えも、ルールブックの言葉をそのまま使わず、小学3年生にもわかるやさしい言葉で答えるようになった'
+      ]}
+    ]},
     {version:'1.49', date:'2026-10-04', sections:[
       {title:'改善', icon:'up', items:[
         'マスコットの「はかせ」を新しいデザイン(白衣にメガネの博士)に変更',
@@ -2768,6 +2794,8 @@
     askAIQuestion:'',
     askAIHistory:[],
     askAIJustAnswered:false,
+    askAIListening:false,
+    furigana:true,
     askAILoading:false,
     askAIError:'',
     shareCard:null
@@ -2776,6 +2804,7 @@
   var tickHandle = null;
   function stopTickers(){
     if(tickHandle){ clearInterval(tickHandle); tickHandle = null; }
+    askVoiceAbort();
     stopTacticsPlayback();
   }
   function genId(){ return 'n' + Date.now().toString(36) + Math.random().toString(36).slice(2,8); }
@@ -2952,6 +2981,7 @@
           '<button class="btn btn-ghost" onclick="showHelp()">'+courtIconSVG('currentColor',16)+' 使い方を見る</button>' +
           '<button class="btn btn-ghost" onclick="showGlossary()">'+courtIconSVG('currentColor',16)+' 用語集(じてん)を見る</button>' +
           '<button class="btn btn-ghost" onclick="showJishu()">'+tacticsIconSVG('currentColor',16)+' 自主トレを記録する</button>' +
+          '<button class="btn btn-ghost furi-toggle" onclick="toggleFurigana()">ふりがな: '+(furiEnabled()?'ON':'OFF')+'</button>' +
         '</div>' +
         '<div class="start-actions">' +
           '<button class="btn ask-ai-btn" onclick="showAskAI()">'+askIconSVG('#fff',16)+' バスケはかせに聞く</button>' +
@@ -3162,14 +3192,15 @@
 
   function helpSections(){
     return [
-      {icon: ballIconSVG('#fff',20), title:'クイズに挑戦しよう', body:'「せんしゅ編」「オフィシャル編」からモードをえらんで、4択クイズに挑戦できます。1回10問、解くたびに問題がシャッフルされるので、何度でも練習になります。まちがえた問題には、下に解説と出典(ルールブックの何条か)が表示されます。'},
-      {icon: courtIconSVG('#fff',20), title:'用語集(じてん)で調べよう', body:'クイズに出てくる言葉やルールを、あとからゆっくり読み返せる用語集です。カテゴリーごとに絞り込んで見ることもできます。'},
-      {icon: tacticsIconSVG('#fff',20), title:'自主トレを記録しよう', body:'練習したメニューを記録できます。決まったメニューから選ぶほか、自由に入力することもでき、同じ内容を3回入力すると自動でえらべる項目に追加されます。「オリジナルの自主トレメニュー」機能を使うと、複数のチェック項目からなる自分だけの練習メニューも作れます。記録した日はカレンダーにスタンプがつきます。'},
-      {icon: pencilIconSVG('#fff',20), title:'バスケノートでメモしよう', body:'気づいたことや、コーチに言われたことを自由にメモしておけるノート機能です。時系列で見返すことができます。'},
-      {icon: tacticsIconSVG('#fff',20), title:'作戦盤で動きを確かめよう', body:'青と白のマグネットをドラッグして、作戦の動きを確かめられます。ハーフコートとフルコートを切りかえられます。動かしたら「ステップを保存」をくり返すと、動きの順番が矢印で残り、「さいせい」でアニメーションで見返せます。'},
-      {icon: courtIconSVG('#fff',20), title:'得点板・ストップウォッチ・タイマー', body:'練習や試合のときに使える、その場かぎりの便利ツールです。ページを閉じると内容はリセットされます。'},
-      {icon: askIconSVG('#fff',20), title:'バスケはかせに聞いてみよう', body:'バスケのルールや練習方法について、AIの「バスケはかせ」に自由に質問できます。バスケに関係のない質問には、やさしくお断りするようになっています。'},
-      {icon: starIconSVG('#fff',20), title:'プロフィールを作ろう', body:'ニックネームなどを登録すると、クイズの成績や自主トレの記録を保存できるようになります。実際の氏名を入力する必要はありません。'}
+      {icon: ballIconSVG('#fff',20), title:'クイズに挑戦しよう', body:'「せんしゅ編」か「オフィシャル編」をえらぶと、4つの中から答えをえらぶクイズができるよ。1回は10問。やるたびに問題がかわるから、何回でも練習できるよ。まちがえたときは、下に「答えのわけ」と「出典(ルールブックの何条か)」が出るよ。'},
+      {icon: courtIconSVG('#fff',20), title:'用語集(じてん)で調べよう', body:'クイズに出てくることばや、ルールを調べられるよ。カテゴリーをえらんで、見たいものだけを出すこともできるよ。'},
+      {icon: tacticsIconSVG('#fff',20), title:'自主トレを記録しよう', body:'やった練習を記録しよう。きまったメニューからえらんでも、自分で入れてもいいよ。同じ内容を3回入れると、つぎからえらべるようになるよ。「オリジナルの自主トレメニュー」では、自分だけの練習メニューも作れるよ。記録した日は、カレンダーにスタンプがつくよ。「きろくのトータル」では、これまでぜんぶの記録や、今月・今週の回数が見られるよ。'},
+      {icon: pencilIconSVG('#fff',20), title:'バスケノートでメモしよう', body:'気づいたことや、コーチに言われたことをメモできるよ。スタンプをおしたり、「かいけつ」にしたりもできるよ。'},
+      {icon: tacticsIconSVG('#fff',20), title:'作戦盤で動きを確かめよう', body:'さいしょは、コートに何もないよ。コートの下の「ベンチ」にいる青と白の人とボールを、ゆびでうごかして、すきなところに置こう。ならべたら「ステップを保存」をおすと、うごきが矢印でのこって、「さいせい」でアニメーションで見られるよ。ハーフコートとフルコートも切りかえられるよ。'},
+      {icon: courtIconSVG('#fff',20), title:'得点板・ストップウォッチ・タイマー', body:'練習や試合で使える、べんりな道具だよ。ページをとじると、数字は消えるよ。'},
+      {icon: askIconSVG('#fff',20), title:'バスケはかせに聞いてみよう', body:'バスケのルールや練習のことを、AIの「バスケはかせ」に聞けるよ。マイクのボタンをおすと、声でしつもんすることもできるよ(ブラウザによっては使えないよ)。バスケと関係ないしつもんには、答えられないんだ。AIの答えはまちがうこともあるから、大事なことはコーチや審判にも聞いてね。'},
+      {icon: starIconSVG('#fff',20), title:'ふりがなをつけたり消したりしよう', body:'むずかしい漢字には、ふりがなが出るよ。スタート画面の「ふりがな」ボタンで、出したり消したりできるよ。'},
+      {icon: starIconSVG('#fff',20), title:'プロフィールを作ろう', body:'ニックネームを入れると、クイズのけっかや自主トレの記録をのこせるよ。ほんとうの名前は入れなくていいよ。'}
     ];
   }
 
@@ -3246,6 +3277,7 @@
       '<p>本アプリでは、Amazonアソシエイト・プログラムおよび「もしもアフィリエイト」等のアフィリエイトサービスを利用し、商品の紹介を行う場合があります。これらのサービスは、成果測定等の目的でCookieを使用することがあります。これにより取得される情報の取り扱いについては、各サービス提供事業者のプライバシーポリシーをご確認ください。</p>' +
       '<h3>5. AIコーチ機能におけるデータの取り扱い</h3>' +
       '<p>AIコーチ機能にご入力いただいた質問文は、回答を生成するために外部のAIサービス(Cloudflare Workers AI等)に送信されます。運営者は、この質問内容を回答生成以外の目的で恒久的に保存・分析することはありません。ただし、不正利用防止のためのアクセス制御(利用回数の制限等)の目的で、一時的に接続元情報を保持する場合があります。</p>' +
+      '<p>また、AIコーチ機能の音声入力(マイクボタン)を使った場合、音声は、お使いのブラウザ・端末が提供する音声認識サービス(GoogleやAppleなど)で文字に変換されます。音声データが本アプリや運営者のサーバーに送信・保存されることはありません。文字になった内容は、上記のとおり質問文として外部のAIサービスに送信されます。マイクは、マイクボタンを押している間だけ使われます。</p>' +
       '<h3>6. 保存データの取り扱い</h3>' +
       '<p>本アプリのバスケノート・自主トレ記録等のデータは、ご利用いただいているバージョンにより、以下のいずれかの方法で保存されます。</p>' +
       '<ul>' +
@@ -4267,6 +4299,7 @@
       render();
       return;
     }
+    askVoiceAbort();
     state.askAILoading = true;
     state.askAIJustAnswered = false;
     state.askAIError = '';
@@ -4313,6 +4346,177 @@
   window.autoResizeAskAI = function(el){
     el.style.height = 'auto';
     el.style.height = Math.min(el.scrollHeight, 140) + 'px';
+  };
+
+  /* ---------------- ふりがな(ルビ) ----------------
+     辞書(FURI_DICT_RAW)にある言葉に <ruby> をつける。小学3年生にもわかるよう、小学2年生までに習う漢字だけの言葉にはつけない。
+     画面を描くときに render() が HTML 全体にかけるので、各画面の文章を書き換えなくていい。 */
+  var FURI_KEY = 'bb-quiz-furigana';
+  var FURI_DICT_RAW = /*FURI_DICT_START*/'第:だい;審判:しんぱん;秒:びょう;選手:せんしゅ;条:じょう;相手:あいて;交代:こうたい;試合:しあい;一般:いっぱん;得点:とくてん;理論:りろん;戦術:せんじゅつ;知識:ちしき;条文:じょうぶん;記録:きろく;反則:はんそく;資料:しりょう;巻末:かんまつ;個:こ;笛:ふえ;表す:あらわす;動き:うごき;瞬間:しゅんかん;味方:みかた;触れ:ふれ;残り:のこり;両:りょう;以内:いない;任務:にんむ;公式:こうしき;基本:きほん;位置:いち;各:かく;場所:ばしょ;持っ:もっ;速攻:そっこう;両手:りょうて;表し:あらわし;適用:てきよう;規定:きてい;決め:きめ;作戦:さくせん;もう一度:もういちど;側:がわ;練習:れんしゅう;問題:もんだい;守る:まもる;状態:じょうたい;必ず:かならず;攻撃:こうげき;決まっ:きまっ;使わ:つかわ;取っ:とっ;保存:ほぞん;確認:かくにん;表示:ひょうじ;始まる:はじまる;請求:せいきゅう;号:ごう;交互:こうご;項目:こうもく;向き:むき;向け:むけ;没収:ぼっしゅう;終了:しゅうりょう;離れ:はなれ;最初:さいしょ;対応:たいおう;方向:ほうこう;球:きゅう;自由:じゆう;使う:つかう;矢印:やじるし;守り:まもり;背番号:せばんごう;消し:けし;認め:みとめ;退場:たいじょう;違反:いはん;終わる:おわる;集:しゅう;続ける:つづける;伝える:つたえる;開い:ひらい;規則:きそく;再開:さいかい;最後:さいご;成功:せいこう;開始:かいし;制限:せいげん;訂正:ていせい;続け:つづけ;動かし:うごかし;挑戦:ちょうせん;全員:ぜんいん;付近:ふきん;対:たい;欄:らん;以上:いじょう;要員:よういん;競技:きょうぎ;動い:うごい;触れる:ふれる;途中:とちゅう;伝え:つたえ;権利:けんり;編:へん;全体:ぜんたい;外側:そとがわ;動かす:うごかす;胸:むね;動く:うごく;突き出す:つきだす;大事:だいじ;出典:しゅってん;必要:ひつよう;罰則:ばっそく;的:てき;動作:どうさ;操作:そうさ;攻める:せめる;区別:くべつ;使っ:つかっ;誰:だれ;振る:ふる;姿勢:しせい;注意:ちゅうい;取る:とる;受け:うけ;待つ:まつ;連携:れんけい;実際:じっさい;扱い:あつかい;投げ:なげ;自動:じどう;追加:ついか;使え:つかえ;問:もん;与え:あたえ;以下:いか;宣せ:せんせ;に対して:にたいして;反対:はんたい;方法:ほうほう;片手:かたて;判断:はんだん;自身:じしん;報告:ほうこく;直接:ちょくせつ;枚:まい;自陣:じじん;曲げ:まげ;近接:きんせつ;片方:かたほう;呼ば:よば;吹く:ふく;内容:ないよう;決まり:きまり;真下:ました;代わり:かわり;低い:ひくい;呼ぶ:よぶ;招き入れる:まねきいれる;人差し指:ひとさしゆび;役割:やくわり;踏み入れ:ふみいれ;観客:かんきゃく;斜線:しゃせん;印:しるし;延長:えんちょう;戦:せん;達成:たっせい;関係:かんけい;始める:はじめる;起き:おき;別:べつ;示す:しめす;誤り:あやまり;両足:りょうあし;持つ:もつ;腕:うで;始め:はじめ;脚:あし;肘:ひじ;示し:しめし;経過:けいか;連続:れんぞく;低く:ひくく;全力:ぜんりょく;背中:せなか;持ち:もち;運ぶ:はこぶ;床:ゆか;動け:うごけ;呼び:よび;受け取っ:うけとっ;進路:しんろ;押す:おす;伸ばし:のばし;吹い:ふい;応援:おうえん;追いかける:おいかける;重心:じゅうしん;抜か:ぬか;打た:うた;張っ:はっ;速く:はやく;同士:どうし;順番:じゅんばん;打つ:うつ;達し:たっし;交差:こうさ;伸ばす:のばす;意味:いみ;連係:れんけい;攻め:せめ;整う:ととのう;禁止:きんし;渡っ:わたっ;場面:ばめん;決まる:きまる;偶然:ぐうぜん;過度:かど;振り回し:ふりまわし;狙う:ねらう;抜く:ぬく;使い方:つかいかた;助ける:たすける;終わり:おわり;得意:とくい;役目:やくめ;無効:むこう;指示:しじ;保護:ほご;終わっ:おわっ;決着:けっちゃく;運用:うんよう;持ち越せる:もちこせる;電源:でんげん;盤:ばん;得点板:とくてんばん;正解:せいかい;画面:がめん;名無し:ななし;編集:へんしゅう;登録:とうろく;引き継ぎ:ひきつぎ;最も:もっとも;状況:じょうきょう;誤っ:あやまっ;行為:こうい;続く:つづく;記載:きさい;定め:さだめ;器具:きぐ;手順:てじゅん;進行:しんこう;未満:みまん;区域:くいき;終え:おえ;用具:ようぐ;番号:ばんごう;向かっ:むかっ;申し出:もうしで;設定:せってい;特別:とくべつ;通常:つうじょう;付き:つき;調整:ちょうせい;解く:とく;変わる:かわる;調べよ:しらべよ;調べ:しらべ;寄っ:よっ;助け:たすけ;切り返す:きりかえす;裏:うら;自動的:じどうてき;打っ:うっ;着地:ちゃくち;置か:おか;起きる:おきる;ひっくり返し:ひっくりかえし;腰:こし;押さえる:おさえる;抗議:こうぎ;行動:こうどう;押し出す:おしだす;変わり:かわり;横:よこ;種類:しゅるい;準備:じゅんび;軽く:かるく;勢い:いきおい;取り:とり;急:きゅう;守っ:まもっ;逆:ぎゃく;挙げ:あげ;握りこぶし:にぎりこぶし;重い:おもい;並ぶ:ならぶ;推進:すいしん;席:せき;軽量:けいりょう;打ち:うち;約:やく;過ぎ:すぎ;判定:はんてい;指さす:ゆびさす;触り:さわり;に対し:にたいし;良い:よい;正面:しょうめん;胸元:むなもと;抱え:かかえ;本物:ほんもの;自然:しぜん;背:せ;決まら:きまら;流れ:ながれ;開く:ひらく;続き:つづき;変わら:かわら;始まり:はじまり;仕事:しごと;目印:めじるし;旗:はた;耳打ち:みみうち;放っ:はなっ;更新:こうしん;掲示板:けいじばん;消す:けす;取れる:とれる;落ち:おち;再:さい;時刻:じこく;変える:かえる;負け:まけ;始まっ:はじまっ;消える:きえる;使える:つかえる;装置:そうち;情報:じょうほう;置こ:おこ;消え:きえ;歴:れき;全部:ぜんぶ;削除:さくじょ;満点:まんてん;機能:きのう;備え:そなえ;端末:たんまつ;復元:ふくげん;作成:さくせい;補足:ほそく;起こっ:おこっ;除く:のぞく;座る:すわる;以外:いがい;許さ:ゆるさ;限り:かぎり;怪我:けが;理由:りゆう;権限:けんげん;章:しょう;再び:ふたたび;時機:じき;境界:きょうかい;残っ:のこっ;結果:けっか;可能:かのう;妨げ:さまたげ;条件:じょうけん;一部:いちぶ;変え:かえ;原則:げんそく;求め:もとめ;真後ろ:まうしろ;特定:とくてい;検定:けんてい;折りたたみ:おりたたみ;式:しき;収納:しゅうのう;袋:ふくろ;専用:せんよう;言葉:ことば;質問:しつもん;自信:じしん;取り返そ:とりかえそ;陣:じん;固定:こてい;ひっくり返す:ひっくりかえす;増える:ふえる;守ら:まもら;動か:うごか;返す:かえす;特:とく;一定:いってい;軸:じく;選ん:えらん;選べ:えらべ;選ぶ:えらぶ;片足:かたあし;着い:ちゃくい;続行:ぞっこう;所有:しょゆう;権:けん;決める:きめる;以降:いこう;一度:いちど;投げ入れる:なげいれる;投げ入れ:なげいれ;重ね:かさね;暴言:ぼうげん;激しい:はげしい;以前:いぜん;現在:げんざい;名称:めいしょう;覚え:おぼえ;協力:きょうりょく;制:せい;上限:じょうげん;握っ:にぎっ;穴:あな;周り:まわり;集まる:あつまる;薄く:うすく;お互い:おたがい;交換:こうかん;向い:むい;反応:はんのう;急い:いそい;詰め寄る:つめよる;突っこみ:つっこみ;戻る:もどる;取り返し:とりかえし;戻り:もどり;最:さい;優先:ゆうせん;持た:もた;切り替え:きりかえ;視界:しかい;切り返し:きりかえし;軌道:きどう;冷静:れいせい;保つ:たもつ;抜ける:ぬける;ふり向い:ふりむい;繰り返す:くりかえす;使い分け:つかいわけ;乱闘:らんとう;招き入れ:まねきいれ;段:だん;配置:はいち;縦:たて;順位:じゅんい;玉突き:たまつき;推奨:すいしょう;個人:こじん;技術:ぎじゅつ;冒頭:ぼうとう;意思:いし;上側:うわがわ;に関する:にかんする;例外:れいがい;介助:かいじょ;最高:さいこう;続い:つづい;合法:ごうほう;命じる:めいじる;投げる:なげる;減点:げんてん;離す:はなす;振り:ふり;振り回す:ふりまわす;仲間:なかま;倒れ:たおれ;保持:ほじ;天井:てんじょう;第一歩:だいいっぽ;奪う:うばう;肩:かた;安定:あんてい;抜こ:ぬこ;危険:きけん;奪わ:うばわ;向ける:むける;一瞬:いっしゅん;不自然:ふしぜん;見破ら:みやぶら;重要:じゅうよう;段階:だんかい;橋渡し:はしわたし;死角:しかく;不意:ふい;抜け出す:ぬけだす;開か:ひらか;真ん中:まんなか;仕掛ける:しかける;主審:しゅしん;打てる:うてる;置き:おき;乱暴:らんぼう;取れ:とれ;裏側:うらがわ;移る:うつる;仕組み:しくみ;置く:おく;達する:たっする;身長:しんちょう;体重:たいじゅう;先発:せんぱつ;温度:おんど;掃除:そうじ;認める:みとめる;初めて:はじめて;消さ:けさ;待て:まて;好き:すき;倍:ばい;進める:すすめる;太鼓:たいこ;連動:れんどう;空気圧:くうきあつ;はね返っ:はねかえっ;動き出す:うごきだす;計測:けいそく;迷い:まよい;違い:ちがい;予定:よてい;最終:さいしゅう;短縮:たんしゅく;使い分ける:つかいわける;予想:よそう;承認:しょうにん;事項:じこう;秒間:びょうかん;囲む:かこむ;目視:もくし;待っ:まっ;拒否:きょひ;使い切っ:つかいきっ;拒ん:こばん;貸し出す:かしだす;珍しい:めずらしい;緑色:りょくしょく;予告:よこく;持ち越し:もちこし;持ち越せ:もちこせ;持ち越す:もちこす;終盤:しゅうばん;戻す:もどす;両方:りょうほう;信じ:しんじ;集め:あつめ;復習:ふくしゅう;出題:しゅつだい;買い物:かいもの;移動:いどう;間違え:まちがえ;成長:せいちょう;目指そ:めざそ;未:み;振り返り:ふりかえり;確かめよ:たしかめよ;道具:どうぐ;漢字:かんじ;利用:りよう;規約:きやく;商:しょう;取引:とりひき;法:ほう;基づく:もとづく;表記:ひょうき;お湯:おゆ;控え:ひかえ;完了:かんりょう;例:れい;管理:かんり;総:そう;件:けん;一覧:いちらん;順:じゅん;画像:がぞう;絞り込み:しぼりこみ;失敗:しっぱい;僕:ぼく;覚えよ:おぼえよ;閉じる:とじる;公開:こうかい;写真:しゃしん;共有:きょうゆう;運動:うんどう;貼り:はり;選択:せんたく;定義:ていぎ;全て:すべて;含む:ふくむ;失格:しっかく;指す:さす;主催:しゅさい;速やか:すみやか;延長線:えんちょうせん;同席:どうせき;その他:そのた;範囲:はんい;触れ合い:ふれあい;妨げる:さまたげる;人物:じんぶつ;指定:してい;に対する:にたいする;除き:のぞき;中断:ちゅうだん;含ま:ふくま;除い:のぞい;同様:どうよう;継続:けいぞく;決定:けってい;与える:あたえる;不利:ふり;不:ふ;処置:しょち;変更:へんこう;使用:しよう;発生:はっせい;離れる:はなれる;完全:かんぜん;任意:にんい;目的:もくてき;望ましい:のぞましい;部分:ぶぶん;示さ:しめさ;用意:ようい;参照:さんしょう;不当:ふとう;性:せい;応じ:おうじ;項:こう;得る:える;相殺:そうさい;別途:べっと;認識:にんしき;物:ぶつ;表面:ひょうめん;幅:はば;座っ:すわっ;距離:きょり;参加:さんか;施設:しせつ;最大:さいだい;財:ざい;協会:きょうかい;氏名:しめい;構成:こうせい;膝:ひざ;着用:ちゃくよう;放た:はなた;有効:ゆうこう;超え:こえ;伝達:でんたつ;起こし:おこし;則り:のっとり;控室:ひかえしつ;手続き:てつづき;取り消し:とりけし;引き続き:ひきつづき;越し:こし;通り抜け:とおりぬけ;使い:つかい;落ち着い:おちつい;歳:さい;一種:いっしゅ;構え:かまえ;速:はや;勝ち:かち;返し:かえし;伝えれ:つたえれ;動:どう;抜け:ぬけ;種:しゅ;得:とく;挟:きょう;自主:じしゅ;苦手:にがて;苦しい:くるしい;習う:ならう;習い:ならい;勉強:べんきょう;安全:あんぜん;集中:しゅうちゅう;守備:しゅび;悪い:わるい;感じ:かんじ;感じる:かんじる;実力:じつりょく;上達:じょうたつ;経験:けいけん;目標:もくひょう;勝つ:かつ;勝て:かて;負ける:まける;体操:たいそう;反省:はんせい;感謝:かんしゃ;助言:じょげん;指導:しどう;心配:しんぱい;緊張:きんちょう;試す:ためす;工夫:くふう;勇気:ゆうき;努力:どりょく;笑顔:えがお;進む:すすむ;向上:こうじょう;宿題:しゅくだい;勝負:しょうぶ;決勝:けっしょう;予選:よせん;員:いん;主将:しゅしょう;監督:かんとく;速度:そくど;基礎:きそ;反復:はんぷく;柔軟:じゅうなん;幹:みき;筋肉:きんにく;疲れ:つかれ;疲れる:つかれる;補給:ほきゅう;睡眠:すいみん;健康:けんこう;速い:はやい;遅い:おそい;美しい:うつくしい;整理:せいり;相談:そうだん;理解:りかい;説明:せつめい;大丈夫:だいじょうぶ;返事:へんじ;有名:ゆうめい;身体:しんたい;挟まっ:はさまっ;次に:つぎに;時計係:とけいがかり;記録係:きろくがかり;楽しい:たのしい;楽しく:たのしく;楽しみ:たのしみ;楽しむ:たのしむ;準備運動:じゅんびうんどう;練習試合:れんしゅうじあい;審判員:しんぱんいん;体幹:たいかん;水分:すいぶん;問い:とい'/*FURI_DICT_END*/;
+  var furiDict = null, furiMaxLen = 1, furiCache = {};
+
+  function furiLoadDict(){
+    if(furiDict) return furiDict;
+    furiDict = {};
+    FURI_DICT_RAW.split(';').forEach(function(e){
+      var i = e.indexOf(':');
+      if(i < 1) return;
+      var k = e.slice(0, i), v = e.slice(i + 1);
+      if(!v) return;
+      furiDict[k] = v;
+      if(k.length > furiMaxLen) furiMaxLen = k.length;
+    });
+    return furiDict;
+  }
+  function furiIsKanji(ch){ var c = ch.charCodeAt(0); return (c >= 0x4E00 && c <= 0x9FFF) || c === 0x3005; }
+  function furiIsHira(ch){ var c = ch.charCodeAt(0); return c >= 0x3041 && c <= 0x3096; }
+  /* 送りがな(前後の同じひらがな)はルビの外に出して、漢字の部分にだけルビをつける */
+  function furiRuby(surface, reading){
+    var pre = '', suf = '';
+    while(surface.length > 1 && reading.length > 1 && furiIsHira(surface.charAt(0)) && surface.charAt(0) === reading.charAt(0)){
+      pre += surface.charAt(0); surface = surface.slice(1); reading = reading.slice(1);
+    }
+    while(surface.length > 1 && reading.length > 1 && furiIsHira(surface.charAt(surface.length - 1)) && surface.charAt(surface.length - 1) === reading.charAt(reading.length - 1)){
+      suf = surface.charAt(surface.length - 1) + suf; surface = surface.slice(0, -1); reading = reading.slice(0, -1);
+    }
+    return pre + '<ruby>' + surface + '<rt>' + reading + '</rt></ruby>' + suf;
+  }
+  function furiText(text){
+    var dict = furiLoadDict();
+    var out = '', i = 0, n = text.length;
+    while(i < n){
+      var ch = text.charAt(i);
+      var start = furiIsKanji(ch) || ((ch === 'お' || ch === 'ご') && i + 1 < n && furiIsKanji(text.charAt(i + 1)));
+      if(start){
+        var hit = 0;
+        for(var len = Math.min(furiMaxLen, n - i); len >= 1; len--){
+          var sub = text.substr(i, len);
+          if(dict[sub]){ out += furiRuby(sub, dict[sub]); i += len; hit = len; break; }
+        }
+        if(hit) continue;
+      }
+      out += ch; i++;
+    }
+    return out;
+  }
+  /* HTML文字列のうち「タグの外の文字」だけに適用(svg・textarea・script・style・ruby の中は触らない) */
+  function furiHtml(html){
+    var parts = html.match(/<[^>]*>|[^<]+/g);
+    if(!parts) return html;
+    var skip = 0, out = '';
+    for(var i = 0; i < parts.length; i++){
+      var p = parts[i];
+      if(p.charAt(0) === '<'){
+        var m = p.match(/^<(\/?)([a-zA-Z][a-zA-Z0-9]*)/);
+        if(m && /^(svg|textarea|script|style|ruby|rt|rp|option|select)$/i.test(m[2])){
+          if(m[1]) skip = Math.max(0, skip - 1); else if(!/\/>$/.test(p)) skip++;
+        }
+        out += p;
+      } else if(skip === 0 && /[一-鿿々お]/.test(p)){
+        var c = furiCache[p];
+        if(c === undefined){ c = furiText(p); if(p.length < 400) furiCache[p] = c; }
+        out += c;
+      } else out += p;
+    }
+    return out;
+  }
+  function furiEnabled(){ return state.furigana !== false; }
+  function furiScreenAllowed(screen){
+    /* 大人向けの法律ページと管理画面にはつけない */
+    return ['terms', 'privacy', 'tokushoho', 'aiReviewGate', 'aiReview'].indexOf(screen) === -1;
+  }
+  window.toggleFurigana = function(){
+    state.furigana = !furiEnabled();
+    try{ localStorage.setItem(FURI_KEY, state.furigana ? '1' : '0'); }catch(e){ /* 保存できなくても動く */ }
+    render();
+  };
+  (function furiInit(){
+    try{ if(localStorage.getItem(FURI_KEY) === '0') state.furigana = false; }catch(e){ /* default ON */ }
+  })();
+
+  /* ---------------- 声でしつもん(音声入力) ----------------
+     ブラウザの音声認識(SpeechRecognition)を使う。使えない/許可されないときはやさしいメッセージを出す。 */
+  var askVoice = {rec: null, base: '', finalText: ''};
+  function askVoiceSupported(){
+    return !!(window.SpeechRecognition || window.webkitSpeechRecognition);
+  }
+  function micIconSVG(accent, size){
+    size = size || 18;
+    return '<svg viewBox="0 0 24 24" width="'+size+'" height="'+size+'" aria-hidden="true">' +
+      '<rect x="9" y="3" width="6" height="11" rx="3" style="fill:'+accent+'"/>' +
+      '<path d="M6,11 C6,15 8.7,17.5 12,17.5 C15.3,17.5 18,15 18,11 M12,17.5 L12,21 M8.5,21 L15.5,21" style="fill:none;stroke:'+accent+';stroke-width:1.8;stroke-linecap:round"/></svg>';
+  }
+  function askVoiceErrorText(code){
+    if(code === 'not-allowed' || code === 'service-not-allowed') return 'マイクが使えないよ。ブラウザで、マイクをつかうことを「きょか」にしてね。';
+    if(code === 'no-speech') return '声がきこえなかったよ。もういちど、マイクをおして話してね。';
+    if(code === 'audio-capture') return 'マイクがみつからないよ。';
+    if(code === 'network') return 'ネットにつながらなくて、声を文字にできなかったよ。';
+    if(code === 'aborted') return '';
+    return 'うまくきこえなかったよ。もういちどやってみてね。';
+  }
+  function askVoiceStop(){
+    var rec = askVoice.rec;
+    if(!rec) return;
+    try{ rec.stop(); }catch(e){ /* すでに止まっている */ }
+  }
+  function askVoiceAbort(){
+    var rec = askVoice.rec;
+    askVoice.rec = null;
+    state.askAIListening = false;
+    if(!rec) return;
+    try{ rec.onend = null; rec.onerror = null; rec.onresult = null; rec.abort(); }catch(e){ /* ignore */ }
+  }
+  window.toggleAskAIVoice = function(){
+    if(state.askAILoading) return;
+    if(state.askAIListening){ askVoiceStop(); return; }
+    var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if(!SR){
+      state.askAIError = 'このブラウザでは、声のにゅうりょくが使えないよ。文字でしつもんしてね。';
+      render();
+      return;
+    }
+    var rec;
+    try{ rec = new SR(); }catch(e){
+      state.askAIError = 'うまくマイクをつかえなかったよ。文字でしつもんしてね。';
+      render();
+      return;
+    }
+    rec.lang = 'ja-JP';
+    rec.interimResults = true;
+    rec.continuous = false;
+    rec.maxAlternatives = 1;
+    askVoice.base = state.askAIQuestion || '';
+    askVoice.finalText = '';
+    rec.onresult = function(ev){
+      var interim = '';
+      for(var i = ev.resultIndex; i < ev.results.length; i++){
+        var r = ev.results[i];
+        if(r.isFinal) askVoice.finalText += r[0].transcript; else interim += r[0].transcript;
+      }
+      var text = (askVoice.base + askVoice.finalText + interim).slice(0, 300);
+      state.askAIQuestion = text;
+      var ta = document.getElementById('ai-textarea');
+      if(ta){ ta.value = text; if(window.autoResizeAskAI) window.autoResizeAskAI(ta); }
+    };
+    rec.onerror = function(ev){
+      var msg = askVoiceErrorText(ev && ev.error);
+      if(msg) state.askAIError = msg;
+    };
+    rec.onend = function(){
+      askVoice.rec = null;
+      state.askAIListening = false;
+      if(state.screen === 'askAI') render();
+    };
+    try{
+      state.askAIError = '';
+      rec.start();
+      askVoice.rec = rec;
+      state.askAIListening = true;
+    }catch(e){
+      state.askAIListening = false;
+      state.askAIError = 'うまくマイクをつかえなかったよ。文字でしつもんしてね。';
+    }
+    render();
   };
 
   /* ---------------- はかせ(マスコット)----------------
@@ -4450,7 +4654,7 @@
       return;
     }
     wander.lastLine = wanderPickLine(WANDER_LINES.length, wander.lastLine, Math.random);
-    wander.say.textContent = WANDER_LINES[wander.lastLine];
+    if(furiEnabled()) wander.say.innerHTML = furiHtml(escapeHtml(WANDER_LINES[wander.lastLine])); else wander.say.textContent = WANDER_LINES[wander.lastLine];
     wander.say.classList.add('show');
     wander.sayTimer = setTimeout(wanderSayHide, 4600);
   }
@@ -4508,11 +4712,14 @@
         hakaseStageHtml() +
         '<div class="ai-log" id="ai-log">'+log+loadingRow+'</div>' +
         (state.askAIError ? '<p class="ai-error">'+escapeHtml(state.askAIError)+'</p>' : '') +
+        (state.askAIListening ? '<p class="meta-line ai-voice-status" role="status">きいているよ。はなしてね。(おわったらマイクをもう一度おしてね)</p>' : '') +
         '<div class="ai-input-row">' +
-          '<textarea class="text-input ai-textarea" id="ai-textarea" rows="1" placeholder="れい: リバウンドが上手になるには？(Shift+Enterで送信)" oninput="updateAskAIQuestion(this.value); autoResizeAskAI(this);" onkeydown="handleAskAIKeydown(event)">'+escapeHtml(state.askAIQuestion)+'</textarea>' +
+          '<textarea class="text-input ai-textarea" id="ai-textarea" rows="1" placeholder="れい: ドリブルのコツは?" oninput="updateAskAIQuestion(this.value); autoResizeAskAI(this);" onkeydown="handleAskAIKeydown(event)">'+escapeHtml(state.askAIQuestion)+'</textarea>' +
+          (askVoiceSupported() ? '<button type="button" class="btn btn-ghost ai-mic-btn'+(state.askAIListening?' listening':'')+'" onclick="toggleAskAIVoice()" aria-label="'+(state.askAIListening?'声のにゅうりょくを止める':'声でしつもんする')+'" title="'+(state.askAIListening?'止める':'声でしつもんする')+'" '+(state.askAILoading?'disabled':'')+'>'+micIconSVG(state.askAIListening?'#fff':'currentColor',18)+'</button>' : '') +
           '<button class="btn ai-send-btn" onclick="submitAskAI()" '+(state.askAILoading?'disabled':'')+'>'+askIconSVG('#fff',18)+'</button>' +
         '</div>' +
-        '<p class="meta-line ai-disclaimer">AIの答えです。まちがっていることもあるので、大事なルールは審判やコーチにも確認してね。</p>' +
+        '<p class="meta-line ai-disclaimer">AIの答えです。まちがっていることもあるので、大事なルールは審判やコーチにも確認してね。(パソコンでは、Shift+Enterでも送れるよ)</p>' +
+        '<div class="start-actions" style="margin-top:4px"><button class="btn btn-ghost furi-toggle" onclick="toggleFurigana()">ふりがな: '+(furiEnabled()?'ON':'OFF')+'</button></div>' +
       '</div>';
   }
 
@@ -5332,7 +5539,12 @@
     else if(state.screen === 'tactics') body = renderTactics();
     else if(state.screen === 'aiReviewGate') body = renderAIReviewGate();
     else if(state.screen === 'aiReview') body = renderAIReview();
-    app.innerHTML = renderUpdateBanner() + renderStorageBanner() + body + renderLegalFooter() + renderTutorial() + renderShareCardModal();
+    var furiOn = furiEnabled() && furiScreenAllowed(state.screen);
+    var mainHtml = renderUpdateBanner() + renderStorageBanner() + body, modalHtml = renderTutorial() + renderShareCardModal();
+    if(furiOn){ mainHtml = furiHtml(mainHtml); modalHtml = furiHtml(modalHtml); }   /* 法律リンクのフッターにはつけない */
+    var fullHtml = mainHtml + renderLegalFooter() + modalHtml;
+    if(document.documentElement && document.documentElement.classList){ if(furiOn) document.documentElement.classList.add('furi-on'); else document.documentElement.classList.remove('furi-on'); }
+    app.innerHTML = fullHtml;
     if(state.screen === 'askAI'){
       var aiLog = document.getElementById('ai-log');
       if(aiLog) aiLog.scrollTop = aiLog.scrollHeight;
