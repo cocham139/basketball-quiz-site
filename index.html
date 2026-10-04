@@ -775,6 +775,31 @@
     max-width:46ch;margin-left:auto;margin-right:auto;line-height:1.6;
   }
   .hoop-illust{width:min(230px,60%);margin:14px auto 4px;display:block;}
+  /* トップのはかせ: ふわふわ浮かんでいて、タップすると「バスケはかせに聞く」へ */
+  .hero-visual{display:flex;justify-content:center;align-items:flex-end;gap:2px;margin:14px auto 4px;}
+  .hero-visual .hoop-illust{width:min(190px,50%);margin:0;}
+  .hakase-home{flex:none;position:relative;display:flex;flex-direction:column;align-items:center;gap:4px;width:92px;padding:0;border:0;background:none;cursor:pointer;-webkit-tap-highlight-color:transparent;}
+  .hakase-home-img{display:block;width:78px;height:114px;object-fit:contain;object-position:50% 100%;transform-origin:50% 100%;pointer-events:none;user-select:none;-webkit-user-select:none;animation:hakase-float 3.6s ease-in-out infinite;}
+  .hakase-home-tag{font-size:0.7rem;font-weight:700;color:var(--ball-ink);background:var(--surface-2);border:2px solid var(--line);border-radius:999px;padding:2px 9px;white-space:nowrap;}
+  .hakase-home:hover .hakase-home-img, .hakase-home:focus-visible .hakase-home-img{animation:hakase-hop .6s ease-out 1;}
+  .hakase-home:active .hakase-home-img{transform:scale(.96);}
+  @keyframes hakase-float{
+    0%,100%{transform:translateY(0) rotate(-1.5deg);}
+    50%{transform:translateY(-9px) rotate(1.5deg);}
+  }
+  @keyframes hakase-hop{
+    0%{transform:translateY(0) scale(1,1);}
+    35%{transform:translateY(-14px) scale(.97,1.05);}
+    70%{transform:translateY(0) scale(1.05,.95);}
+    100%{transform:translateY(0) scale(1,1);}
+  }
+  @media (prefers-reduced-motion: reduce){
+    .hakase-home-img{animation:none !important;}
+  }
+  @media (max-width:380px){
+    .hakase-home{width:80px;}
+    .hakase-home-img{width:66px;height:96px;}
+  }
   .hoop-illust .ball{
     transform-origin:150px 40px;
     animation:bounce 2.4s ease-in-out infinite;
@@ -862,9 +887,14 @@
 (function(){
   "use strict";
 
-  var APP_VERSION = "1.45";
+  var APP_VERSION = "1.46";
 
   var CHANGELOG = [
+    {version:'1.46', date:'2026-10-04', sections:[
+      {title:'新機能', icon:'star', items:[
+        'スタート画面に、マスコットの「はかせ」がふわふわ浮かんで登場。タップ(クリック)すると「バスケはかせに聞く」にジャンプできる'
+      ]}
+    ]},
     {version:'1.45', date:'2026-10-04', sections:[
       {title:'新機能', icon:'star', items:[
         '「バスケはかせに聞く」に、マスコットの「はかせ」が登場! 待っているときは体をゆらゆら、考え中は首をかしげて、答えが返ってくると得意げにぴょん!と弾む',
@@ -2887,7 +2917,7 @@
     return renderScoreboard(false) +
       '<div class="card start-hero">' +
         '<div class="top-row">'+profileChip()+'</div>' +
-        hoopIllustSVG() +
+        '<div class="hero-visual">' + hoopIllustSVG() + hakaseHomeHtml() + '</div>' +
         '<h1 onclick="aiTitleTap()">バスケ はかせクイズ</h1>' +
         '<p class="sub">ミニバスの試合で実際に出てくるルール・しんぱんのサイン・チームディフェンス・さくせんを、4択(たく)クイズでたしかめよう。解くたびに問題が変わるよ!</p>' +
         '<div class="mode-grid">' + modeCard('player') + modeCard('official') + weakEntryCard() + '</div>' +
@@ -4285,6 +4315,12 @@
       '</div>' +
       '<div class="hakase-say" role="status" aria-live="polite">'+escapeHtml(hakaseLine(mood))+'</div>' +
     '</div>';
+  }
+  function hakaseHomeHtml(){
+    return '<button type="button" class="hakase-home" onclick="showAskAI()" aria-label="バスケはかせに聞く">' +
+      '<img class="hakase-home-img" src="'+(HAKASE_IMGS.idle || HAKASE_IMG_DEFAULT)+'" alt="" draggable="false">' +
+      '<span class="hakase-home-tag">きいてみる?</span>' +
+    '</button>';
   }
   function hakaseCelebrate(){
     state.askAIJustAnswered = true;
